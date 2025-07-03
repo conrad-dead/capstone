@@ -79,12 +79,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 e.preventDefault();
 
                 //collect data
-                const formData = new FormData(form);
+                const formData = {
+                    first_name: document.getElementById('first_name').value.trim(),
+                    last_name: document.getElementById('last_name').value.trim(),
+                    password: document.getElementById('password').value.trim(),
+                    confirm_password: document.getElementById('confirm_password').value.trim(),
+                    role: document.getElementById('role').value.trim(),
+                    barangay: document.getElementById('barangay').value || ''.trim() 
+                }
 
                 //submit using the Fetch API or ajax (simulate success here)
-                fetch('../api/create_use.php', {
+                fetch('../api/create_user.php', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
                 })
                 .then(res => res.json())
                 .then(data => {
