@@ -39,30 +39,33 @@ switch($method) {
         }
 
         //validation
-        if (empty($first_name) || empty($last_name) || empty($password) || empty($confirm_password) || empty($role)){
-            echo json_encode(['success' => false, 'message' => 'All fields are required.']);
-            exit();
-        }
+        // if (empty($first_name) || empty($last_name) || empty($password) || empty($confirm_password) || empty($role)){
+        //     echo json_encode(['success' => false, 'message' => 'All fields are required.']);
+        //     exit();
+        // }
 
-        //check password
-        if($password !== $confirm_password){
-            echo json_encode(['success' => false, 'message' => 'Password do not much']);
-            exit();
-        }
+        // //check password
+        // if($password !== $confirm_password){
+        //     echo json_encode(['success' => false, 'message' => 'Password do not much']);
+        //     exit();
+        // }
 
-        if($password < 6) {
-            echo json_encode(['success' => false, 'message' => 'Password must be at least 6 character long.']);
-            exit();
-        } 
+        // if($password < 6) {
+        //     echo json_encode(['success' => false, 'message' => 'Password must be at least 6 character long.']);
+        //     exit();
+        // } 
 
-        if($role === 'bhw' && empty($barangay)){
-            echo json_encode(['success' => false, 'message' => 'Barangay is required for BHW users.']);
-            exit();
-        }
+        // if($role === 'bhw' && empty($barangay)){
+        //     echo json_encode(['success' => false, 'message' => 'Barangay is required for BHW users.']);
+        //     exit();
+        // }
 
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
         
         //add in the data base
+
+        //---------Todo--------------------
+        // add data into the data base
         $sql = "INSERT INTO clinicians (first_name, last_name, role, contact_number, barangay_id) VALUE (?, ?, ?, ?, ?)";
 
         echo json_encode(['success' => true, 'message' => 'User created (dummy response)']);

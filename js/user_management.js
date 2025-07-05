@@ -76,16 +76,77 @@ document.addEventListener('DOMContentLoaded', function () {
 
             //handling form submission
             form.addEventListener('submit', function (e) {
+                
                 e.preventDefault();
 
-                //collect data
+                document.querySelectorAll('span[id$="_error"]').forEach(span => span.textContent = '');
+                
+                //collect input
+                const first_name = document.getElementById('first_name').value.trim();
+                const last_name = document.getElementById('last_name').value.trim();
+                const password = document.getElementById('password').value.trim();
+                const confirm_password = document.getElementById('confirm_password').value.trim();
+                const role = document.getElementById('role').value.trim();
+                const barangay = document.getElementById('barangay').value || ''.trim();
+
+                // form validation
+                let hasError = false;
+
+                if(!first_name) {
+                    document.getElementById('first_name_error').textContent = "First name is required";
+                    hasError = true;
+                }
+
+                if(!last_name) {
+                    document.getElementById('last_name_error').textContent = "Last name is required";
+                    hasError = true;
+                }
+
+                if(!password) {
+                    document.getElementById('password_error').textContent = "Password is required";
+                    hasError = true;
+                } else if (password.length < 6) {
+                    document.getElementById('password_error').textContent = "Password must be at least 6 character long";
+                    hasError = true;
+                }
+
+                if(!confirm_password) {
+                    document.getElementById('confirm_password_error').textContent = "Please confirm your password";
+                    hasError = true;
+                } else if (password !== confirm_password) {
+                    document.getElementById('confirm_password_error').textContent = "Password do not match";
+                    hasError = true;
+                }
+                
+                if (!role) {
+                    document.getElementById('role_error').textContent = "Role is required";
+                    hasError = true;
+                }
+                if (role === 'bhw' && !barangay) {
+                    document.getElementById('barangay_error').textContent = 'Barangay is required for BHW.';
+                    hasError = true;
+                }
+
+                //check kung may error
+                if (hasError) {
+                    return; // stop kana dyan ya
+                }
+
+                let final_barangay;
+
+                if (role === "bhw") {
+                    final_barangay = barangay;
+                } else {
+                    final_barangay = null;
+                }
+
                 const formData = {
-                    first_name: document.getElementById('first_name').value.trim(),
-                    last_name: document.getElementById('last_name').value.trim(),
-                    password: document.getElementById('password').value.trim(),
-                    confirm_password: document.getElementById('confirm_password').value.trim(),
-                    role: document.getElementById('role').value.trim(),
-                    barangay: document.getElementById('barangay').value || ''.trim() 
+                    first_name,
+                    last_name,
+                    password,
+                    confirm_password,
+                    role,
+                    barangay: final_barangay
                 }
 
                 //submit using the Fetch API or ajax (simulate success here)

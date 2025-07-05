@@ -57,6 +57,7 @@
                             class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                             placeholder="Enter  First Name"
                         >
+                        <span id="first_name_error" class="text-red-500 text-sm"></span>
                     </div>
 
                     <div>
@@ -69,6 +70,7 @@
                             class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                             placeholder="Enter  First Name"
                         >
+                        <span id="last_name_error" class="text-red-500 text-sm"></span>
                     </div>
 
                     <div>
@@ -81,6 +83,7 @@
                             class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                             placeholder="Enter password"
                         >
+                        <span id="password_error" class="text-red-500 text-sm"></span>
                     </div>
 
                     <div>
@@ -93,6 +96,7 @@
                             class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue=500 sm:text-sm"
                             placeholder="Confirm password"
                         >
+                        <span id="confirm_password_error" class="text-red-500 text-sm"></span>
                     </div>
 
                     <div>
@@ -109,6 +113,7 @@
                             <option value="bhw">Bhw</option>
                             <option value="pharmacist">Pharmacist</option>
                         </select>
+                        <span id="role_error" class="text-red-500 text-sm"></span>
                     </div>
 
                     <!-- Para sa mga naka assign na bhw kung anong barangay sila-->
