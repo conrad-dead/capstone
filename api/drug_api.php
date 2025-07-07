@@ -132,14 +132,124 @@ switch ($resource) {
 
                 }
                 break;
-                
+
             default:
                 http_response_code(405); // Method Not Allowed
                 echo json_encode(['success' => false, 'message' => 'Method Not Allowed for categories.']);
                 break;
         }
+        break;
+        
+    case 'drugs': 
+        switch($method) {
+
+            case 'GET': 
+                $drugs = [];
+                $sql = "SELECT d.id, d.name, d.quantity, d.expiry_date, d.created_at, c.name AS category_name, c.id AS category_id
+                        FROM drugs d
+                        LEFT JOIN drug_categories c ON d.category_id = c.id
+                        ORDER BY d.name ASC";
+                if ($result = $conn->query($sql)) {
+                    while ($row = $result->fetch_assoc()) {
+                        $drugs[] = $row;
+                    }
+                    $result->free();
+                    echo json_encode(['success' => true, 'data' => $drugs]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Error fetching drugs: ' . $conn->error]);
+                }
+                break;
+
+            case 'POST': 
+                $input = json_decode(file_get_contents('php://input'), true);
+                $name = trim($input['name']);
+                $category_id = intval($input['category_id']);
+                $quantity = intval($input['quantity'] ?? 0);
+                $expiry_date = trim($input['expiry_date'] ?? '');
+
+                if (empty($name) || $category_id <= 0 || $quantity < 0 || empty($expiry_date)) {
+                    echo json_encode(['success' => false, 'message' => 'All drug fields are required']);
+                } else {
+                    $sql = "INSERT INTO drugs (name, category_id, quantity, expiry_date) VALUES (?, ?, ?, ?)";
+                    if ($stmt = $conn->prepare($sql)) {
+                        $stmt->bind_param("siis", $name, $category_id, $quantity, $expiry_date);
+                        if ($stmt->execute()) {
+                            echo json_encode(['success' => true, 'message' => "Drug '{$name}' added successfully!"]);
+                        } else {
+                            echo json_encode(['success' => false, 'message' => 'Error adding drug: ' . $stmt->error]);
+                        }
+                        $stmt->close();
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Database error: Could not prepare statement. ' . $conn->error]);
+                    }
+                }
+                break;
+
+            case 'PUT': 
+                $input = json_decode(file_get_contents('php://input'), true);
+                $drug_id = intval($input['id'] ?? 0);
+                $name = trim($input['name']);
+                $category_id = intval($input['category_id'] ?? 0);
+                $quantity = intval($input['quantity'] ?? 0);
+                $expiry_date = trim($input['expiry_date'] ?? '');
+
+                if ($drug_id <= 0 || empty($name) || $category_id <= 0 || $quantity < 0 || empty($expiry_date)) {
+                    echo json_encode(['success' => false, 'message' => 'Drug ID and all fields are required and valid for update.']);
+                } else {
+                    $sql = "UPDATE drugs SET name = ?, category_id = ?, quantity = ?, expiry_date = ? WHERE id = ?";
+                    if ($stmt = $conn->prepare($sql)) {
+                        $stmt->bind_param("siisi", $name, $category_id, $quantity, $expiry_date, $drug_id);
+                        if ($stmt->execute()) {
+                            if ($stmt->affected_rows > 0) {
+                                echo json_encode(['success' => true, 'message' => "Drug (ID: {$drug_id}) updated successfully!"]);
+                            } else {
+                                echo json_encode(['success' => false, 'message' => "No changes made or drug (ID: {$drug_id}) not found."]);
+                            }
+                        } else {
+                            echo json_encode(['success' => false, 'message' => 'Error updating drug: ' . $stmt->error]);
+                        }
+                        $stmt->close();
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Database error: Could not prepare update statement. ' . $conn->error]);
+                    }
+                }
+                break;
+
+            case 'DELETE': 
+                $input = json_decode(file_get_contents('php://input'), true);
+                $drug_id = intval($input['id'] ?? 0);
+
+                if ($drug_id <= 0) {
+                    echo json_encode(['success' => false, 'message' => 'Invalid drug ID for deletion.']);
+                } else {
+                    $sql = "DELETE FROM drugs WHERE id = ?";
+                    if ($stmt = $conn->prepare($sql)) {
+                        $stmt->bind_param("i", $drug_id);
+                        if ($stmt->execute()) {
+                            if ($stmt->affected_rows > 0) {
+                                echo json_encode(['success' => true, 'message' => "Drug (ID: {$drug_id}) deleted successfully."]);
+                            } else {
+                                echo json_encode(['success' => false, 'message' => "Drug (ID: {$drug_id}) not found or already deleted."]);
+                            }
+                        } else {
+                            echo json_encode(['success' => false, 'message' => 'Error deleting drug: ' . $stmt->error]);
+                        }
+                        $stmt->close();
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Database error: Could not prepare delete statement. ' . $conn->error]);
+                    }
+                }
+                break;
+
+            default: 
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Method Not Allowed for drugs.']);
+                break;
+        }
+        break;
+    default:
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid API resource specified.']);
+        break;
 }
-
-
-
 ?>
