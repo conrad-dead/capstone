@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () =>{
         } catch (error) {
             drugTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Network error or API not available.</td></tr>`;
             console.error('Error fetching drugs:', error);
-            displayMessage('Failed to connect to the server. Please try again later.', 'error');
+            displayMessage('Failed to connect to the server. Please try again later.', error);
         }
     }
 
