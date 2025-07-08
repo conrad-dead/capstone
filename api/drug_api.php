@@ -144,17 +144,41 @@ switch ($resource) {
         switch($method) {
 
             case 'GET': 
+                //handling pagination
+                $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+                $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 10;
+                $offset = ($page - 1) * $limit;
+
+                //get total drugs
+                $total_drugs = 0;
+                $sql_count = "SELECT COUNT(*) AS total FROM drugs";
+                if ($result_count = $conn->query($sql_count)) {
+                    $row_count = $result_count->fetch_assoc();
+                    $total_drugs = $row_count['total'];
+                    $result_count->free();
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Error counting drugs. ' .$conn->error]);
+                    break;
+                }
+
+                //list of drugs with pagination 
                 $drugs = [];
                 $sql = "SELECT d.id, d.name, d.quantity, d.expiry_date, d.created_at, c.name AS category_name, c.id AS category_id
                         FROM drugs d
                         LEFT JOIN drug_categories c ON d.category_id = c.id
-                        ORDER BY d.name ASC";
-                if ($result = $conn->query($sql)) {
+                        ORDER BY d.name ASC
+                        LIMIT ? OFFSET ?";
+                if ($stmt = $conn->prepare($sql)) {
+                    $stmt->bind_param("ii", $limit, $offset);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+
                     while ($row = $result->fetch_assoc()) {
                         $drugs[] = $row;
                     }
                     $result->free();
-                    echo json_encode(['success' => true, 'data' => $drugs]);
+                    $stmt->close();
+                    echo json_encode(['success' => true, 'data' => $drugs, 'total_drugs' => $total_drugs, 'page' => $page, 'limit' =>$limit]);
                 } else {
                     echo json_encode(['success' => false, 'message' => 'Error fetching drugs: ' . $conn->error]);
                 }

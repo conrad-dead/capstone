@@ -161,6 +161,11 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination Controls for Drugs -->
+                <div id="drugPagination" class="flex justify-center items-center space-x-2 mt-6">
+                    <!-- Pagination buttons will be rendered here by JavaScript -->
+                </div>
             </div>
 
             <!-- Tab Content for Categories -->

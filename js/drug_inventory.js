@@ -26,10 +26,15 @@ document.addEventListener('DOMContentLoaded', () =>{
     const drugSubmitButton = document.getElementById('drugSubmitButton');
     const cancelDrugEditButton = document.getElementById('cancelDrugEditButton');
     const drugTableBody = document.getElementById('drugTableBody');
+    const drugPagination = document.getElementById('drugPagination'); // Pagination container
 
     let editingCategoryId = null;
     let editingDrugId = null;
     let allCategories = []; // para sa dropdowns
+
+    //pagination per page
+    let currentPage = 1;
+    const drugsPerPage = 10;
 
     const CATEGORY_API_URL = '../api/drug_api.php?resource=categories';
     const DRUG_API_URL = '../api/drug_api.php?resource=drugs';
@@ -272,10 +277,11 @@ document.addEventListener('DOMContentLoaded', () =>{
     async function fetchDrugs() {
         drugTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Loading drugs...</td></tr>`;
         try {
-            const response = await fetch(DRUG_API_URL, { method: 'GET' });
+            const response = await fetch(`${DRUG_API_URL}&page=${currentPage}&limit=${drugsPerPage}`, { method: 'GET' });
             const result = await response.json();
             if (result.success) {
                 renderDrugTable(result.data);
+                rederPaginationControls(result.total_drugs);
             } else {
                 drugTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Error: ${result.message}</td></tr>`;
                 displayMessage(result.message, 'error');
@@ -312,6 +318,58 @@ document.addEventListener('DOMContentLoaded', () =>{
         });
     }
 
+
+    // ----- function that handle pagination
+    function rederPaginationControls(totalDrugs) {
+        drugPagination.innerHTML = '';
+        const totalPages = Math.ceil(totalDrugs / drugsPerPage);
+
+        if (totalPages <= 1) {
+            return;
+        }
+
+        //previous button 
+        const prevButton = document.createElement('button');
+        prevButton.textContent = 'Previous';
+        prevButton.classList.add('pagination-button');
+        prevButton.disabled = currentPage === 1;
+        prevButton.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                fetchDrugs();
+            }
+        });
+
+        drugPagination.appendChild(prevButton);
+
+        //page number
+        for(let i = 1; i <= totalPages; i++) {
+            const pageButton = document.createElement('button');
+            pageButton.textContent = i;
+            pageButton.classList.add('pagination-button');
+            if (i === currentPage) {
+                pageButton.classList.add('active-page');
+            }
+            pageButton.addEventListener('click', () => {
+                currentPage = i;
+                fetchDrugs();
+            });
+            drugPagination.appendChild(pageButton);
+        }
+
+        //next button
+        const nexButton = document.createElement('button');
+        nexButton.textContent = 'Next';
+        nexButton.classList.add('pagination-button');
+        nexButton.disabled = currentPage === totalPages;
+        nexButton.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                fetchDrugs();
+            }
+        });
+        drugPagination.appendChild(nexButton);
+    }
 
     // -------------------------Drug Form submission---------------------------------------------
 
