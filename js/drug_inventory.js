@@ -149,6 +149,12 @@ document.addEventListener('DOMContentLoaded', () =>{
         });
     }
 
+    categoryNameInput.addEventListener('blur', () => {
+        let raw = categoryNameInput.value.trim();
+        let capitalize = raw.split(' ').filter(word => word.length > 0).map(word => word[0].toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+
+        categoryNameInput.value = capitalize;
+    });
 
     //---------------------category Form submission----------------------------
     categoryForm.addEventListener ('submit', async (event) => {
@@ -156,14 +162,17 @@ document.addEventListener('DOMContentLoaded', () =>{
 
         document.querySelectorAll('span[id$="_error"]').forEach(span => span.textContent = '');
 
+        let rawName = categoryNameInput.value.trim();
+        let capitalizeName = rawName.split(' ').filter(word => word.length > 0).map(word => word[0].toUpperCase() + word.slice(1).toLowerCase()).join(' ');
 
-        const name = categoryNameInput.value.trim();
+        categoryIdInput.value = capitalizeName;
+        // const name = categoryNameInput.value.trim();
 
 
         let hasError = false;
 
         //form validation
-        if (!name) {
+        if (!capitalizeName) {
              document.getElementById('name_error').textContent = "Drug name is required";
             hasError = true;
         }
@@ -173,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () =>{
         }
 
         const categoryData = {
-            name: name
+            name: capitalizeName
         };
 
         let method = 'POST';
@@ -372,11 +381,30 @@ document.addEventListener('DOMContentLoaded', () =>{
     }
 
     // -------------------------Drug Form submission---------------------------------------------
+        // Capitalize each word when input loses focus
+    drugNameInput.addEventListener('blur', () => {
+        const raw = drugNameInput.value.trim();
+        const capitalized = raw
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+        drugNameInput.value = capitalized;
+    });
 
     drugForm.addEventListener('submit', async (event) => {
         event.preventDefault();
+
+        //capitalize first letter
+        let rawName = drugNameInput.value.trim();
+        let capitalizeName = rawName
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+
+        drugNameInput.value = capitalizeName;
+
         const drugData = {
-            name: drugNameInput.value.trim(),
+            name: capitalizeName,
             category_id: parseInt(drugCategorySelect.value),
             quantity: parseInt(drugQuantityInput.value),
             expiry_date: drugExpiryDateInput.value
