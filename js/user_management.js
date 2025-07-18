@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordInput = document.getElementById('password');
     const confirmPasswordInput = document.getElementById('confirm_password');
     const roleSelect = document.getElementById('role'); // Now for role_id
+    const contactNumberInput = document.getElementById('contact_number'); // New: Contact Number Input
     const barangayField = document.getElementById('barangayField');
     const barangayInput = document.getElementById('barangay');
     const barangaySearchResults = document.getElementById('barangaySearchResults');
@@ -14,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelEditButton = document.getElementById('cancelEditButton');
     const userTableBody = document.getElementById('userTableBody');
 
-    // --- Role Management Elements ---S
+    // --- Role Management Elements ---
     const roleForm = document.getElementById('roleForm');
     const roleFormTitle = document.getElementById('roleFormTitle');
     const roleManageIdInput = document.getElementById('roleManageId');
@@ -30,6 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const usersTabContent = document.getElementById('usersTabContent');
     const rolesTabContent = document.getElementById('rolesTabContent');
 
+    // Debugging: Log elements to console to verify they are found
+    console.log('usersTabBtn element:', usersTabBtn);
+    console.log('rolesTabBtn element:', rolesTabBtn);
+    console.log('usersTabContent element:', usersTabContent);
+    console.log('rolesTabContent element:', rolesTabContent);
+
     // --- Global State ---
     let editingUserId = null;
     let editingRoleId = null;
@@ -42,26 +49,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Tab Switching Logic ---
     function showTab(tabName) {
         // Deactivate all tab buttons and hide all tab contents
-        usersTabBtn.classList.remove('active');
-        rolesTabBtn.classList.remove('active');
-        usersTabContent.classList.remove('active');
-        rolesTabContent.classList.remove('active');
+        if (usersTabBtn) usersTabBtn.classList.remove('active');
+        if (rolesTabBtn) rolesTabBtn.classList.remove('active');
+        if (usersTabContent) usersTabContent.classList.remove('active');
+        if (rolesTabContent) rolesTabContent.classList.remove('active');
 
         // Activate the selected tab and show its content
         if (tabName === 'users') {
-            usersTabBtn.classList.add('active');
-            usersTabContent.classList.add('active');
+            if (usersTabBtn) usersTabBtn.classList.add('active');
+            if (usersTabContent) usersTabContent.classList.add('active');
             fetchUsers(); // Refresh users when tab is shown
             fetchRoles(); // Also refresh roles for user form dropdown
         } else if (tabName === 'roles') {
-            rolesTabBtn.classList.add('active');
-            rolesTabContent.classList.add('active');
+            if (rolesTabBtn) rolesTabBtn.classList.add('active');
+            if (rolesTabContent) rolesTabContent.classList.add('active');
             fetchRoles(); // Refresh roles when tab is shown
         }
     }
 
-    usersTabBtn.addEventListener('click', () => showTab('users'));
-    rolesTabBtn.addEventListener('click', () => showTab('roles'));
+    // Add event listeners with null checks to prevent TypeError
+    if (usersTabBtn) {
+        usersTabBtn.addEventListener('click', () => showTab('users'));
+    } else {
+        console.error("Error: 'usersTabBtn' element not found in the DOM. Check HTML ID.");
+    }
+
+    if (rolesTabBtn) {
+        rolesTabBtn.addEventListener('click', () => showTab('roles'));
+    } else {
+        console.error("Error: 'rolesTabBtn' element not found in the DOM. Check HTML ID.");
+    }
 
     // --- SweetAlert Functions ---
     function displayMessage(message, type) {
@@ -89,122 +106,155 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- User Management Functions ---
 
     function resetUserForm() {
-        userForm.reset();
-        userFormTitle.textContent = 'Create User';
-        submitButton.textContent = 'Create User';
-        passwordInput.setAttribute('required', 'required');
-        confirmPasswordInput.setAttribute('required', 'required');
-        cancelEditButton.classList.add('hidden');
-        barangayField.classList.add('hidden');
-        barangayInput.removeAttribute('required');
-        barangayInput.value = '';
-        barangaySearchResults.classList.add('hidden');
-        barangaySearchResults.innerHTML = '';
+        if (userForm) userForm.reset();
+        if (userFormTitle) userFormTitle.textContent = 'Create User';
+        if (submitButton) submitButton.textContent = 'Create User';
+        if (passwordInput) passwordInput.setAttribute('required', 'required');
+        if (confirmPasswordInput) confirmPasswordInput.setAttribute('required', 'required');
+        if (cancelEditButton) cancelEditButton.classList.add('hidden');
+        if (barangayField) barangayField.classList.add('hidden');
+        if (barangayInput) {
+            barangayInput.removeAttribute('required');
+            barangayInput.value = '';
+        }
+        if (barangaySearchResults) {
+            barangaySearchResults.classList.add('hidden');
+            barangaySearchResults.innerHTML = '';
+        }
         editingUserId = null;
         // Re-populate roles dropdown to ensure it's fresh
         populateRoleDropdown(allRoles);
     }
 
     function populateUserFormForEdit(user) {
-        userFormTitle.textContent = 'Edit User';
-        submitButton.textContent = 'Update User';
-        passwordInput.removeAttribute('required');
-        confirmPasswordInput.removeAttribute('required');
-        passwordInput.value = '';
-        confirmPasswordInput.value = '';
-        cancelEditButton.classList.remove('hidden');
+        if (userFormTitle) userFormTitle.textContent = 'Edit User';
+        if (submitButton) submitButton.textContent = 'Update User';
+        if (passwordInput) passwordInput.removeAttribute('required');
+        if (confirmPasswordInput) confirmPasswordInput.removeAttribute('required');
+        if (passwordInput) passwordInput.value = '';
+        if (confirmPasswordInput) confirmPasswordInput.value = '';
+        if (cancelEditButton) cancelEditButton.classList.remove('hidden');
 
-        userIdInput.value = user.id;
-        usernameInput.value = user.username;
-        roleSelect.value = user.role_id; // Set by role_id
+        if (userIdInput) userIdInput.value = user.id;
+        if (usernameInput) usernameInput.value = user.username;
+        if (roleSelect) roleSelect.value = user.role_id; // Set by role_id
+        if (contactNumberInput) contactNumberInput.value = user.contact_number || ''; // Populate contact number
 
         // Trigger change event to show/hide barangay field if needed
         const event = new Event('change');
-        roleSelect.dispatchEvent(event); 
+        if (roleSelect) roleSelect.dispatchEvent(event); 
 
         if (user.role_name === 'bhw') { // Check role_name for BHW
-            barangayInput.value = user.barangay || '';
-            barangayInput.setAttribute('required', 'required');
+            if (barangayInput) {
+                barangayInput.value = user.barangay || '';
+                barangayInput.setAttribute('required', 'required');
+            }
         } else {
-            barangayInput.value = '';
-            barangayInput.removeAttribute('required');
+            if (barangayInput) {
+                barangayInput.value = '';
+                barangayInput.removeAttribute('required');
+            }
         }
         editingUserId = user.id;
     }
 
-    cancelEditButton.addEventListener('click', resetUserForm);
+    if (cancelEditButton) cancelEditButton.addEventListener('click', resetUserForm);
 
     // Populate role dropdown dynamically
     function populateRoleDropdown(roles) {
-        roleSelect.innerHTML = '<option value="">Select role</option>'; // Clear existing
+        if (roleSelect) roleSelect.innerHTML = '<option value="">Select role</option>'; // Clear existing
         roles.forEach(role => {
             const option = document.createElement('option');
             option.value = role.id;
             option.textContent = role.name;
-            roleSelect.appendChild(option);
+            if (roleSelect) roleSelect.appendChild(option);
         });
     }
 
     // --- Dynamic Field Visibility (Barangay) ---
     const barangays = [ // This list should match the one in your PHP file
-        "Barcolan", "Buenavista", "Dammao", "District I(Pob.)", 
-        "District II(Pob.)", "District III(Pob.)", "Furao", "Guibang", 
-        "Lenzon", "Linglingay", "Mabini", "Pintor", "Rizal", "Songsong", 
-        "Union", "Upi"
+        "Aglipay", "Baguio", "Barangay I (Pob.)", "Barangay II (Pob.)", 
+        "Barangay III (Pob.)", "Barangay IV (Pob.)", "Bungcag", "Camasi", 
+        "Central", "Dabburab", "Furao", "Guinatan", "Guisi", "Malasin", 
+        "Mabini", "Union"
     ];
 
-    barangayInput.addEventListener('input', () => {
-        const searchTerm = barangayInput.value.toLowerCase();
-        barangaySearchResults.innerHTML = '';
-
-        if (searchTerm.length > 0) {
-            const filteredBarangays = barangays.filter(barangay =>
-                barangay.toLowerCase().includes(searchTerm)
-            );
-
-            if (filteredBarangays.length > 0) {
-                filteredBarangays.forEach(barangay => {
-                    const item = document.createElement('div');
-                    item.classList.add('autocomplete-item');
-                    item.textContent = barangay;
-                    item.addEventListener('click', () => {
-                        barangayInput.value = barangay;
-                        barangaySearchResults.classList.add('hidden');
-                    });
-                    barangaySearchResults.appendChild(item);
-                });
-                barangaySearchResults.classList.remove('hidden');
+    if (roleSelect) {
+        roleSelect.addEventListener('change', () => {
+            const selectedRoleOption = roleSelect.options[roleSelect.selectedIndex];
+            // Check the text content of the selected option to determine if it's 'Bhw'
+            if (selectedRoleOption && selectedRoleOption.textContent === 'Bhw') {
+                if (barangayField) barangayField.classList.remove('hidden');
+                if (barangayInput) barangayInput.setAttribute('required', 'required');
             } else {
-                barangaySearchResults.classList.add('hidden');
+                if (barangayField) barangayField.classList.add('hidden');
+                if (barangayInput) {
+                    barangayInput.removeAttribute('required');
+                    barangayInput.value = '';
+                }
+                if (barangaySearchResults) {
+                    barangaySearchResults.classList.add('hidden');
+                    barangaySearchResults.innerHTML = '';
+                }
             }
-        } else {
-            barangaySearchResults.classList.add('hidden');
-        }
-    });
+        });
+    }
 
-    barangayInput.addEventListener('blur', () => {
-        setTimeout(() => {
-            if (!barangaySearchResults.contains(document.activeElement)) {
-                barangaySearchResults.classList.add('hidden');
-            }
-        }, 100);
-    });
+    // --- Barangay Search/Autocomplete Logic ---
+    if (barangayInput) {
+        barangayInput.addEventListener('input', () => {
+            const searchTerm = barangayInput.value.toLowerCase();
+            if (barangaySearchResults) barangaySearchResults.innerHTML = '';
 
-    barangayInput.addEventListener('focus', () => {
-        if (barangayInput.value.length > 0) {
-                const searchTerm = barangayInput.value.toLowerCase();
+            if (searchTerm.length > 0) {
                 const filteredBarangays = barangays.filter(barangay =>
-                barangay.toLowerCase().includes(searchTerm)
-            );
-            if (filteredBarangays.length > 0) {
-                barangaySearchResults.classList.remove('hidden');
+                    barangay.toLowerCase().includes(searchTerm)
+                );
+
+                if (filteredBarangays.length > 0) {
+                    filteredBarangays.forEach(barangay => {
+                        const item = document.createElement('div');
+                        item.classList.add('autocomplete-item');
+                        item.textContent = barangay;
+                        item.addEventListener('click', () => {
+                            if (barangayInput) barangayInput.value = barangay;
+                            if (barangaySearchResults) barangaySearchResults.classList.add('hidden');
+                        });
+                        if (barangaySearchResults) barangaySearchResults.appendChild(item);
+                    });
+                    if (barangaySearchResults) barangaySearchResults.classList.remove('hidden');
+                } else {
+                    if (barangaySearchResults) barangaySearchResults.classList.add('hidden');
+                }
+            } else {
+                if (barangaySearchResults) barangaySearchResults.classList.add('hidden');
             }
-        }
-    });
+        });
+
+        barangayInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                if (barangaySearchResults && !barangaySearchResults.contains(document.activeElement)) {
+                    barangaySearchResults.classList.add('hidden');
+                }
+            }, 100);
+        });
+
+        barangayInput.addEventListener('focus', () => {
+            if (barangayInput.value.length > 0) {
+                 const searchTerm = barangayInput.value.toLowerCase();
+                 const filteredBarangays = barangays.filter(barangay =>
+                    barangay.toLowerCase().includes(searchTerm)
+                );
+                if (filteredBarangays.length > 0) {
+                    if (barangaySearchResults) barangaySearchResults.classList.remove('hidden');
+                }
+            }
+        });
+    }
 
 
     async function fetchUsers() {
-        userTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Loading users...</td></tr>`;
+        if (userTableBody) userTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Loading users...</td></tr>`;
         try {
             const response = await fetch(USER_API_URL, { method: 'GET' });
             const result = await response.json();
@@ -213,20 +263,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 allUsers = result.data;
                 renderUserTable(allUsers);
             } else {
-                userTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Error: ${result.message}</td></tr>`;
+                if (userTableBody) userTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-red-500">Error: ${result.message}</td></tr>`;
                 displayMessage(result.message, 'error');
             }
         } catch (error) {
-            userTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Network error or API not available.</td></tr>`;
+            if (userTableBody) userTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-red-500">Network error or API not available.</td></tr>`;
             console.error('Error fetching users:', error);
             displayMessage('Failed to connect to the server. Please try again later.', 'error');
         }
     }
 
     function renderUserTable(users) {
-        userTableBody.innerHTML = '';
+        if (userTableBody) userTableBody.innerHTML = '';
         if (users.length === 0) {
-            userTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No users found in the system. Create one above!</td></tr>`;
+            if (userTableBody) userTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No users found in the system. Create one above!</td></tr>`;
             return;
         }
         users.forEach(user => {
@@ -236,6 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${user.id}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.username}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.role_name}</td> <!-- Display role_name -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.contact_number || 'N/A'}</td> <!-- Display contact_number -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.barangay || 'N/A'}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.created_at || 'N/A'}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -243,133 +294,140 @@ document.addEventListener('DOMContentLoaded', () => {
                     <a href="#" class="text-red-600 hover:text-red-900 delete-user-btn" data-user-id="${user.id}">Delete</a>
                 </td>
             `;
-            userTableBody.appendChild(row);
+            if (userTableBody) userTableBody.appendChild(row);
         });
     }
 
-    userForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-
-        const formData = new FormData(userForm);
-        const userData = Object.fromEntries(formData.entries());
-
-        // Ensure role_id is an integer
-        userData.role_id = parseInt(userData.role_id);
-
-        // Conditionally add/remove password and confirm_password
-        if (passwordInput.value === '' && confirmPasswordInput.value === '') {
-            delete userData.password;
-            delete userData.confirm_password;
-        } else if (passwordInput.value !== confirmPasswordInput.value) {
-            displayMessage('Passwords do not match.', 'error');
-            return;
-        } else if (passwordInput.value.length < 6) {
-            displayMessage('Password must be at least 6 characters long.', 'error');
-            return;
-        }
-
-        // Determine if selected role is BHW to handle barangay
-        const selectedRoleObject = allRoles.find(role => role.id === userData.role_id);
-        if (selectedRoleObject && selectedRoleObject.name === 'bhw' && barangayInput.value.trim() !== '') {
-            userData.barangay = barangayInput.value.trim();
-        } else {
-            userData.barangay = null;
-        }
-
-        let method = 'POST';
-        let url = USER_API_URL;
-
-        if (editingUserId) {
-            method = 'PUT';
-            userData.id = editingUserId;
-        }
-
-        try {
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(userData)
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                displayMessage(result.message, 'success');
-                resetUserForm();
-                fetchUsers();
-            } else {
-                displayMessage(result.message, 'error');
-            }
-        } catch (error) {
-            console.error(`Error ${method}ing user:`, error);
-            displayMessage(`Failed to ${method} user due to a network error. Please try again.`, 'error');
-        }
-    });
-
-    userTableBody.addEventListener('click', async (event) => {
-        if (event.target.classList.contains('delete-user-btn')) {
+    if (userForm) {
+        userForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const userIdToDelete = event.target.dataset.userId;
 
-            const confirmed = await showConfirm(`Are you sure you want to delete user ID: ${userIdToDelete}?`);
+            const formData = new FormData(userForm);
+            const userData = Object.fromEntries(formData.entries());
 
-            if (confirmed) {
-                try {
-                    const response = await fetch(USER_API_URL, {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id: userIdToDelete })
-                    });
+            // Ensure role_id is an integer
+            userData.role_id = parseInt(userData.role_id);
 
-                    const result = await response.json();
-
-                    if (result.success) {
-                        displayMessage(result.message, 'success');
-                        fetchUsers();
-                    } else {
-                        displayMessage(result.message, 'error');
-                    }
-                } catch (error) {
-                    console.error('Error deleting user:', error);
-                    displayMessage('Failed to delete user due to a network error.', 'error');
+            // Conditionally add/remove password and confirm_password
+            if (passwordInput && confirmPasswordInput) {
+                if (passwordInput.value === '' && confirmPasswordInput.value === '') {
+                    delete userData.password;
+                    delete userData.confirm_password;
+                } else if (passwordInput.value !== confirmPasswordInput.value) {
+                    displayMessage('Passwords do not match.', 'error');
+                    return;
+                } else if (passwordInput.value.length < 6) {
+                    displayMessage('Password must be at least 6 characters long.', 'error');
+                    return;
                 }
             }
-        }
-    });
 
-    userTableBody.addEventListener('click', (event) => {
-        if (event.target.classList.contains('edit-user-btn')) {
-            event.preventDefault();
-            const row = event.target.closest('tr');
-            const userData = JSON.parse(row.dataset.user);
-            populateUserFormForEdit(userData);
-        }
-    });
+
+            // Determine if selected role is BHW to handle barangay
+            const selectedRoleObject = allRoles.find(role => role.id === userData.role_id);
+            if (selectedRoleObject && selectedRoleObject.name === 'bhw' && barangayInput && barangayInput.value.trim() !== '') {
+                userData.barangay = barangayInput.value.trim();
+            } else {
+                userData.barangay = null;
+            }
+
+            let method = 'POST';
+            let url = USER_API_URL;
+
+            if (editingUserId) {
+                method = 'PUT';
+                userData.id = editingUserId;
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    displayMessage(result.message, 'success');
+                    resetUserForm();
+                    fetchUsers();
+                } else {
+                    displayMessage(result.message, 'error');
+                }
+            } catch (error) {
+                console.error(`Error ${method}ing user:`, error);
+                displayMessage(`Failed to ${method} user due to a network error. Please try again.`, 'error');
+            }
+        });
+    }
+
+    if (userTableBody) {
+        userTableBody.addEventListener('click', async (event) => {
+            if (event.target.classList.contains('delete-user-btn')) {
+                event.preventDefault();
+                const userIdToDelete = event.target.dataset.userId;
+
+                const confirmed = await showConfirm(`Are you sure you want to delete user ID: ${userIdToDelete}?`);
+
+                if (confirmed) {
+                    try {
+                        const response = await fetch(USER_API_URL, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: userIdToDelete })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            displayMessage(result.message, 'success');
+                            fetchUsers();
+                        } else {
+                            displayMessage(result.message, 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error deleting user:', error);
+                        displayMessage('Failed to delete user due to a network error.', 'error');
+                    }
+                }
+            }
+        });
+
+        userTableBody.addEventListener('click', (event) => {
+            if (event.target.classList.contains('edit-user-btn')) {
+                event.preventDefault();
+                const row = event.target.closest('tr');
+                const userData = JSON.parse(row.dataset.user);
+                populateUserFormForEdit(userData);
+            }
+        });
+    }
 
     // --- Role Management Functions ---
 
     function resetRoleForm() {
-        roleForm.reset();
-        roleFormTitle.textContent = 'Manage Roles';
-        roleSubmitButton.textContent = 'Add Role';
-        cancelRoleEditButton.classList.add('hidden');
+        if (roleForm) roleForm.reset();
+        if (roleFormTitle) roleFormTitle.textContent = 'Manage Roles';
+        if (roleSubmitButton) roleSubmitButton.textContent = 'Add Role';
+        if (cancelRoleEditButton) cancelRoleEditButton.classList.add('hidden');
         editingRoleId = null;
     }
 
     function populateRoleFormForEdit(role) {
-        roleFormTitle.textContent = 'Edit Role';
-        roleSubmitButton.textContent = 'Update Role';
-        cancelRoleEditButton.classList.remove('hidden');
-        roleManageIdInput.value = role.id;
-        roleManageNameInput.value = role.name;
-        roleManageDescriptionInput.value = role.description || '';
+        if (roleFormTitle) roleFormTitle.textContent = 'Edit Role';
+        if (roleSubmitButton) roleSubmitButton.textContent = 'Update Role';
+        if (cancelRoleEditButton) cancelRoleEditButton.classList.remove('hidden');
+        if (roleManageIdInput) roleManageIdInput.value = role.id;
+        if (roleManageNameInput) roleManageNameInput.value = role.name;
+        if (roleManageDescriptionInput) roleManageDescriptionInput.value = role.description || '';
         editingRoleId = role.id;
     }
 
-    cancelRoleEditButton.addEventListener('click', resetRoleForm);
+    if (cancelRoleEditButton) cancelRoleEditButton.addEventListener('click', resetRoleForm);
 
     async function fetchRoles() {
-        roleTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Loading roles...</td></tr>`;
+        if (roleTableBody) roleTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Loading roles...</td></tr>`;
         try {
             const response = await fetch(ROLE_API_URL, { method: 'GET' });
             const result = await response.json();
@@ -378,20 +436,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderRoleTable(allRoles);
                 populateRoleDropdown(allRoles); // Update user form dropdown
             } else {
-                roleTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Error: ${result.message}</td></tr>`;
+                if (roleTableBody) roleTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Error: ${result.message}</td></tr>`;
                 displayMessage(result.message, 'error');
             }
         } catch (error) {
-            roleTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Network error or API not available.</td></tr>`;
+            if (roleTableBody) roleTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Network error or API not available.</td></tr>`;
             console.error('Error fetching roles:', error);
             displayMessage('Failed to connect to the server. Please try again later.', 'error');
         }
     }
 
     function renderRoleTable(roles) {
-        roleTableBody.innerHTML = '';
+        if (roleTableBody) roleTableBody.innerHTML = '';
         if (roles.length === 0) {
-            roleTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No roles found. Add some above!</td></tr>`;
+            if (roleTableBody) roleTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No roles found. Add some above!</td></tr>`;
             return;
         }
         roles.forEach(role => {
@@ -407,76 +465,80 @@ document.addEventListener('DOMContentLoaded', () => {
                     <a href="#" class="text-red-600 hover:text-red-900 delete-role-btn" data-role-id="${role.id}">Delete</a>
                 </td>
             `;
-            roleTableBody.appendChild(row);
+            if (roleTableBody) roleTableBody.appendChild(row);
         });
     }
 
-    roleForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const roleData = {
-            name: roleManageNameInput.value.trim(),
-            description: roleManageDescriptionInput.value.trim()
-        };
+    if (roleForm) {
+        roleForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const roleData = {
+                name: roleManageNameInput.value.trim(),
+                description: roleManageDescriptionInput.value.trim()
+            };
 
-        let method = 'POST';
-        let url = ROLE_API_URL;
+            let method = 'POST';
+            let url = ROLE_API_URL;
 
-        if (editingRoleId) {
-            method = 'PUT';
-            roleData.id = editingRoleId;
-        }
-
-        try {
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(roleData)
-            });
-            const result = await response.json();
-            if (result.success) {
-                displayMessage(result.message, 'success');
-                resetRoleForm();
-                fetchRoles();
-            } else {
-                displayMessage(result.message, 'error');
+            if (editingRoleId) {
+                method = 'PUT';
+                roleData.id = editingRoleId;
             }
-        } catch (error) {
-            console.error(`Error ${method}ing role:`, error);
-            displayMessage(`Failed to ${method} role due to a network error.`, 'error');
-        }
-    });
 
-    roleTableBody.addEventListener('click', async (event) => {
-        if (event.target.classList.contains('edit-role-btn')) {
-            event.preventDefault();
-            const row = event.target.closest('tr');
-            const roleData = JSON.parse(row.dataset.role);
-            populateRoleFormForEdit(roleData);
-        } else if (event.target.classList.contains('delete-role-btn')) {
-            event.preventDefault();
-            const roleIdToDelete = event.target.dataset.roleId;
-            const confirmed = await showConfirm(`Are you sure you want to delete role ID: ${roleIdToDelete}? This will fail if users are assigned to it.`);
-            if (confirmed) {
-                try {
-                    const response = await fetch(ROLE_API_URL, {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id: roleIdToDelete })
-                    });
-                    const result = await response.json();
-                    if (result.success) {
-                        displayMessage(result.message, 'success');
-                        fetchRoles();
-                    } else {
-                        displayMessage(result.message, 'error');
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(roleData)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    displayMessage(result.message, 'success');
+                    resetRoleForm();
+                    fetchRoles();
+                } else {
+                    displayMessage(result.message, 'error');
+                }
+            } catch (error) {
+                console.error(`Error ${method}ing role:`, error);
+                displayMessage(`Failed to ${method} role due to a network error.`, 'error');
+            }
+        });
+    }
+
+    if (roleTableBody) {
+        roleTableBody.addEventListener('click', async (event) => {
+            if (event.target.classList.contains('edit-role-btn')) {
+                event.preventDefault();
+                const row = event.target.closest('tr');
+                const roleData = JSON.parse(row.dataset.role);
+                populateRoleFormForEdit(roleData);
+            } else if (event.target.classList.contains('delete-role-btn')) {
+                event.preventDefault();
+                const roleIdToDelete = event.target.dataset.roleId;
+                const confirmed = await showConfirm(`Are you sure you want to delete role ID: ${roleIdToDelete}? This will fail if users are assigned to it.`);
+                if (confirmed) {
+                    try {
+                        const response = await fetch(ROLE_API_URL, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: roleIdToDelete })
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                            displayMessage(result.message, 'success');
+                            fetchRoles();
+                        } else {
+                            displayMessage(result.message, 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error deleting role:', error);
+                        displayMessage('Failed to delete role due to a network error.', 'error');
                     }
-                } catch (error) {
-                    console.error('Error deleting role:', error);
-                    displayMessage('Failed to delete role due to a network error.', 'error');
                 }
             }
-        }
-    });
+        });
+    }
 
     // Initial setup: Show users tab by default and fetch data
     showTab('users');
