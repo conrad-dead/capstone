@@ -1,188 +1,483 @@
-document.addEventListener('DOMContentLoaded', function () {
-            const roleSelect = document.getElementById('role');
-            const form = document.getElementById('createUserForm')
-            const barangayField = document.getElementById('barangayField');
-            const barangayInput = document.getElementById('barangay');
-            const barangaySearchResults = document.getElementById('barangaySearchResults');
+document.addEventListener('DOMContentLoaded', () => {
+    // --- User Form Elements ---
+    const userForm = document.getElementById('userForm');
+    const userFormTitle = document.getElementById('userFormTitle');
+    const userIdInput = document.getElementById('userId');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    const roleSelect = document.getElementById('role'); // Now for role_id
+    const barangayField = document.getElementById('barangayField');
+    const barangayInput = document.getElementById('barangay');
+    const barangaySearchResults = document.getElementById('barangaySearchResults');
+    const submitButton = document.getElementById('submitButton');
+    const cancelEditButton = document.getElementById('cancelEditButton');
+    const userTableBody = document.getElementById('userTableBody');
 
-            const barangayData = [
-                "Barcolan", "Buenavista", "Dammao", "District I", "District II", "District III",
-                "Furao", "Guibang", "Lenzon", "Linglingay", "Mabini", "Pintor",
-                "Rizal", "Songsong", "Union", "Upi"
-            ];
+    // --- Role Management Elements ---S
+    const roleForm = document.getElementById('roleForm');
+    const roleFormTitle = document.getElementById('roleFormTitle');
+    const roleManageIdInput = document.getElementById('roleManageId');
+    const roleManageNameInput = document.getElementById('roleManageName');
+    const roleManageDescriptionInput = document.getElementById('roleManageDescription');
+    const roleSubmitButton = document.getElementById('roleSubmitButton');
+    const cancelRoleEditButton = document.getElementById('cancelRoleEditButton');
+    const roleTableBody = document.getElementById('roleTableBody');
 
-            roleSelect.addEventListener('change', function () {
-                if (roleSelect.value === 'bhw') {
-                    barangayField.classList.remove('hidden');
-                    barangayInput.setAttribute('required', 'required');
-                } else {
-                    barangayField.classList.add('hidden');
-                    barangayInput.removeAttribute('required');
-                    barangayInput.value = "";
-                    barangaySearchResults.classList.add('hidden');
-                    barangaySearchResults.innerHTML = '';
-                }
-            });
+    // --- Tab Elements ---
+    const usersTabBtn = document.getElementById('usersTabBtn');
+    const rolesTabBtn = document.getElementById('rolesTabBtn');
+    const usersTabContent = document.getElementById('usersTabContent');
+    const rolesTabContent = document.getElementById('rolesTabContent');
 
-            barangayInput.addEventListener('input', function () {
-                const searchTerm = barangayInput.value.toLowerCase();
-                barangaySearchResults.innerHTML = '';
+    // --- Global State ---
+    let editingUserId = null;
+    let editingRoleId = null;
+    let allRoles = []; // Stores all fetched roles for dynamic dropdown
 
-                if (searchTerm.length > 0) {
-                    const filteredBarangays = barangayData.filter(function (barangay) {
-                        return barangay.toLowerCase().includes(searchTerm);
-                    });
+    // --- API Endpoint URLs ---
+    const USER_API_URL = '../api/user_api.php?resource=users';
+    const ROLE_API_URL = '../api/user_api.php?resource=roles'; // New API endpoint for roles
 
-                    if (filteredBarangays.length > 0) {
-                        filteredBarangays.forEach(function (barangay) {
-                            const item = document.createElement('div');
-                            item.classList.add('autocomplete-item', 'cursor-pointer', 'px-4', 'py-2', 'hover:bg-blue-100');
-                            item.textContent = barangay;
-                            item.addEventListener('click', function () {
-                                barangayInput.value = barangay;
-                                barangaySearchResults.classList.add('hidden');
-                            });
-                            barangaySearchResults.appendChild(item);
-                        });
-                        barangaySearchResults.classList.remove('hidden');
-                    } else {
-                       const noMatch = document.createElement('div');
-                        noMatch.textContent = 'No barangay found';
-                        noMatch.classList.add('text-gray-500', 'px-4', 'py-2');
-                        barangaySearchResults.appendChild(noMatch);
-                        barangaySearchResults.classList.remove('hidden');
-                    }
-                } else {
-                    barangaySearchResults.classList.add('hidden');
-                }
-            });
+    // --- Tab Switching Logic ---
+    function showTab(tabName) {
+        // Deactivate all tab buttons and hide all tab contents
+        usersTabBtn.classList.remove('active');
+        rolesTabBtn.classList.remove('active');
+        usersTabContent.classList.remove('active');
+        rolesTabContent.classList.remove('active');
 
-            barangayInput.addEventListener('blur', function () {
-                setTimeout(function () {
-                    barangaySearchResults.classList.add('hidden');
-                }, 100);
-            });
+        // Activate the selected tab and show its content
+        if (tabName === 'users') {
+            usersTabBtn.classList.add('active');
+            usersTabContent.classList.add('active');
+            fetchUsers(); // Refresh users when tab is shown
+            fetchRoles(); // Also refresh roles for user form dropdown
+        } else if (tabName === 'roles') {
+            rolesTabBtn.classList.add('active');
+            rolesTabContent.classList.add('active');
+            fetchRoles(); // Refresh roles when tab is shown
+        }
+    }
 
-            barangayInput.addEventListener('focus', function () {
-                const searchTerm = barangayInput.value.toLowerCase();
-                const filteredBarangays = barangayData.filter(function (barangay) {
-                    return barangay.toLowerCase().includes(searchTerm);
-                });
+    usersTabBtn.addEventListener('click', () => showTab('users'));
+    rolesTabBtn.addEventListener('click', () => showTab('roles'));
 
-                if (filteredBarangays.length > 0) {
-                    barangaySearchResults.classList.remove('hidden');
-                }
-            });
-
-            //handling form submission
-            form.addEventListener('submit', function (e) {
-                
-                e.preventDefault();
-
-                document.querySelectorAll('span[id$="_error"]').forEach(span => span.textContent = '');
-                
-                //collect input
-                const first_name = document.getElementById('first_name').value.trim();
-                const last_name = document.getElementById('last_name').value.trim();
-                const password = document.getElementById('password').value.trim();
-                const confirm_password = document.getElementById('confirm_password').value.trim();
-                const role = document.getElementById('role').value.trim();
-                const barangay = document.getElementById('barangay').value || ''.trim();
-
-                // form validation
-                let hasError = false;
-
-                if(!first_name) {
-                    document.getElementById('first_name_error').textContent = "First name is required";
-                    hasError = true;
-                }
-
-                if(!last_name) {
-                    document.getElementById('last_name_error').textContent = "Last name is required";
-                    hasError = true;
-                }
-
-                if(!password) {
-                    document.getElementById('password_error').textContent = "Password is required";
-                    hasError = true;
-                } else if (password.length < 6) {
-                    document.getElementById('password_error').textContent = "Password must be at least 6 character long";
-                    hasError = true;
-                }
-
-                if(!confirm_password) {
-                    document.getElementById('confirm_password_error').textContent = "Please confirm your password";
-                    hasError = true;
-                } else if (password !== confirm_password) {
-                    document.getElementById('confirm_password_error').textContent = "Password do not match";
-                    hasError = true;
-                }
-                
-                if (!role) {
-                    document.getElementById('role_error').textContent = "Role is required";
-                    hasError = true;
-                }
-                if (role === 'bhw' && !barangay) {
-                    document.getElementById('barangay_error').textContent = 'Barangay is required for BHW.';
-                    hasError = true;
-                }
-
-                //check kung may error
-                if (hasError) {
-                    return; // stop kana dyan ya
-                }
-
-                let final_barangay;
-
-                if (role === "bhw") {
-                    final_barangay = barangay;
-                } else {
-                    final_barangay = null;
-                }
-
-                const formData = {
-                    first_name,
-                    last_name,
-                    password,
-                    confirm_password,
-                    role,
-                    barangay: final_barangay
-                }
-
-                //submit using the Fetch API or ajax (simulate success here)
-                fetch('../api/create_user.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if(data.success) {
-                        Swal.fire({
-                            title: 'User Created',
-                            text: 'The user has been successfully created',
-                            icon: 'success',
-                            confirmButtonText: 'OK'
-                        });
-                    } else {
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.message || 'Something went wrong',
-                            icon: 'error',
-                            confirmButtonText: 'OK'
-                        });
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    Swal.fire({
-                        title: 'Error',
-                        text: 'Failed to create user.',
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    });
-                });
-            });
+    // --- SweetAlert Functions ---
+    function displayMessage(message, type) {
+        Swal.fire({
+            icon: type,
+            title: (type === 'success' ? 'Success!' : 'Error!'),
+            text: message,
+            confirmButtonText: 'OK'
         });
+    }
+
+    async function showConfirm(message) {
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: message,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, proceed!'
+        });
+        return result.isConfirmed;
+    }
+
+    // --- User Management Functions ---
+
+    function resetUserForm() {
+        userForm.reset();
+        userFormTitle.textContent = 'Create User';
+        submitButton.textContent = 'Create User';
+        passwordInput.setAttribute('required', 'required');
+        confirmPasswordInput.setAttribute('required', 'required');
+        cancelEditButton.classList.add('hidden');
+        barangayField.classList.add('hidden');
+        barangayInput.removeAttribute('required');
+        barangayInput.value = '';
+        barangaySearchResults.classList.add('hidden');
+        barangaySearchResults.innerHTML = '';
+        editingUserId = null;
+        // Re-populate roles dropdown to ensure it's fresh
+        populateRoleDropdown(allRoles);
+    }
+
+    function populateUserFormForEdit(user) {
+        userFormTitle.textContent = 'Edit User';
+        submitButton.textContent = 'Update User';
+        passwordInput.removeAttribute('required');
+        confirmPasswordInput.removeAttribute('required');
+        passwordInput.value = '';
+        confirmPasswordInput.value = '';
+        cancelEditButton.classList.remove('hidden');
+
+        userIdInput.value = user.id;
+        usernameInput.value = user.username;
+        roleSelect.value = user.role_id; // Set by role_id
+
+        // Trigger change event to show/hide barangay field if needed
+        const event = new Event('change');
+        roleSelect.dispatchEvent(event); 
+
+        if (user.role_name === 'bhw') { // Check role_name for BHW
+            barangayInput.value = user.barangay || '';
+            barangayInput.setAttribute('required', 'required');
+        } else {
+            barangayInput.value = '';
+            barangayInput.removeAttribute('required');
+        }
+        editingUserId = user.id;
+    }
+
+    cancelEditButton.addEventListener('click', resetUserForm);
+
+    // Populate role dropdown dynamically
+    function populateRoleDropdown(roles) {
+        roleSelect.innerHTML = '<option value="">Select role</option>'; // Clear existing
+        roles.forEach(role => {
+            const option = document.createElement('option');
+            option.value = role.id;
+            option.textContent = role.name;
+            roleSelect.appendChild(option);
+        });
+    }
+
+    // --- Dynamic Field Visibility (Barangay) ---
+    const barangays = [ // This list should match the one in your PHP file
+        "Barcolan", "Buenavista", "Dammao", "District I(Pob.)", 
+        "District II(Pob.)", "District III(Pob.)", "Furao", "Guibang", 
+        "Lenzon", "Linglingay", "Mabini", "Pintor", "Rizal", "Songsong", 
+        "Union", "Upi"
+    ];
+
+    barangayInput.addEventListener('input', () => {
+        const searchTerm = barangayInput.value.toLowerCase();
+        barangaySearchResults.innerHTML = '';
+
+        if (searchTerm.length > 0) {
+            const filteredBarangays = barangays.filter(barangay =>
+                barangay.toLowerCase().includes(searchTerm)
+            );
+
+            if (filteredBarangays.length > 0) {
+                filteredBarangays.forEach(barangay => {
+                    const item = document.createElement('div');
+                    item.classList.add('autocomplete-item');
+                    item.textContent = barangay;
+                    item.addEventListener('click', () => {
+                        barangayInput.value = barangay;
+                        barangaySearchResults.classList.add('hidden');
+                    });
+                    barangaySearchResults.appendChild(item);
+                });
+                barangaySearchResults.classList.remove('hidden');
+            } else {
+                barangaySearchResults.classList.add('hidden');
+            }
+        } else {
+            barangaySearchResults.classList.add('hidden');
+        }
+    });
+
+    barangayInput.addEventListener('blur', () => {
+        setTimeout(() => {
+            if (!barangaySearchResults.contains(document.activeElement)) {
+                barangaySearchResults.classList.add('hidden');
+            }
+        }, 100);
+    });
+
+    barangayInput.addEventListener('focus', () => {
+        if (barangayInput.value.length > 0) {
+                const searchTerm = barangayInput.value.toLowerCase();
+                const filteredBarangays = barangays.filter(barangay =>
+                barangay.toLowerCase().includes(searchTerm)
+            );
+            if (filteredBarangays.length > 0) {
+                barangaySearchResults.classList.remove('hidden');
+            }
+        }
+    });
+
+
+    async function fetchUsers() {
+        userTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Loading users...</td></tr>`;
+        try {
+            const response = await fetch(USER_API_URL, { method: 'GET' });
+            const result = await response.json();
+
+            if (result.success) {
+                allUsers = result.data;
+                renderUserTable(allUsers);
+            } else {
+                userTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Error: ${result.message}</td></tr>`;
+                displayMessage(result.message, 'error');
+            }
+        } catch (error) {
+            userTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Network error or API not available.</td></tr>`;
+            console.error('Error fetching users:', error);
+            displayMessage('Failed to connect to the server. Please try again later.', 'error');
+        }
+    }
+
+    function renderUserTable(users) {
+        userTableBody.innerHTML = '';
+        if (users.length === 0) {
+            userTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No users found in the system. Create one above!</td></tr>`;
+            return;
+        }
+        users.forEach(user => {
+            const row = document.createElement('tr');
+            row.dataset.user = JSON.stringify(user); 
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${user.id}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.username}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.role_name}</td> <!-- Display role_name -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.barangay || 'N/A'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.created_at || 'N/A'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <a href="#" class="text-blue-600 hover:text-blue-900 mr-4 edit-user-btn" data-user-id="${user.id}">Edit</a>
+                    <a href="#" class="text-red-600 hover:text-red-900 delete-user-btn" data-user-id="${user.id}">Delete</a>
+                </td>
+            `;
+            userTableBody.appendChild(row);
+        });
+    }
+
+    userForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(userForm);
+        const userData = Object.fromEntries(formData.entries());
+
+        // Ensure role_id is an integer
+        userData.role_id = parseInt(userData.role_id);
+
+        // Conditionally add/remove password and confirm_password
+        if (passwordInput.value === '' && confirmPasswordInput.value === '') {
+            delete userData.password;
+            delete userData.confirm_password;
+        } else if (passwordInput.value !== confirmPasswordInput.value) {
+            displayMessage('Passwords do not match.', 'error');
+            return;
+        } else if (passwordInput.value.length < 6) {
+            displayMessage('Password must be at least 6 characters long.', 'error');
+            return;
+        }
+
+        // Determine if selected role is BHW to handle barangay
+        const selectedRoleObject = allRoles.find(role => role.id === userData.role_id);
+        if (selectedRoleObject && selectedRoleObject.name === 'bhw' && barangayInput.value.trim() !== '') {
+            userData.barangay = barangayInput.value.trim();
+        } else {
+            userData.barangay = null;
+        }
+
+        let method = 'POST';
+        let url = USER_API_URL;
+
+        if (editingUserId) {
+            method = 'PUT';
+            userData.id = editingUserId;
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userData)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                displayMessage(result.message, 'success');
+                resetUserForm();
+                fetchUsers();
+            } else {
+                displayMessage(result.message, 'error');
+            }
+        } catch (error) {
+            console.error(`Error ${method}ing user:`, error);
+            displayMessage(`Failed to ${method} user due to a network error. Please try again.`, 'error');
+        }
+    });
+
+    userTableBody.addEventListener('click', async (event) => {
+        if (event.target.classList.contains('delete-user-btn')) {
+            event.preventDefault();
+            const userIdToDelete = event.target.dataset.userId;
+
+            const confirmed = await showConfirm(`Are you sure you want to delete user ID: ${userIdToDelete}?`);
+
+            if (confirmed) {
+                try {
+                    const response = await fetch(USER_API_URL, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: userIdToDelete })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        displayMessage(result.message, 'success');
+                        fetchUsers();
+                    } else {
+                        displayMessage(result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                    displayMessage('Failed to delete user due to a network error.', 'error');
+                }
+            }
+        }
+    });
+
+    userTableBody.addEventListener('click', (event) => {
+        if (event.target.classList.contains('edit-user-btn')) {
+            event.preventDefault();
+            const row = event.target.closest('tr');
+            const userData = JSON.parse(row.dataset.user);
+            populateUserFormForEdit(userData);
+        }
+    });
+
+    // --- Role Management Functions ---
+
+    function resetRoleForm() {
+        roleForm.reset();
+        roleFormTitle.textContent = 'Manage Roles';
+        roleSubmitButton.textContent = 'Add Role';
+        cancelRoleEditButton.classList.add('hidden');
+        editingRoleId = null;
+    }
+
+    function populateRoleFormForEdit(role) {
+        roleFormTitle.textContent = 'Edit Role';
+        roleSubmitButton.textContent = 'Update Role';
+        cancelRoleEditButton.classList.remove('hidden');
+        roleManageIdInput.value = role.id;
+        roleManageNameInput.value = role.name;
+        roleManageDescriptionInput.value = role.description || '';
+        editingRoleId = role.id;
+    }
+
+    cancelRoleEditButton.addEventListener('click', resetRoleForm);
+
+    async function fetchRoles() {
+        roleTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Loading roles...</td></tr>`;
+        try {
+            const response = await fetch(ROLE_API_URL, { method: 'GET' });
+            const result = await response.json();
+            if (result.success) {
+                allRoles = result.data; // Store roles for user form dropdown
+                renderRoleTable(allRoles);
+                populateRoleDropdown(allRoles); // Update user form dropdown
+            } else {
+                roleTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Error: ${result.message}</td></tr>`;
+                displayMessage(result.message, 'error');
+            }
+        } catch (error) {
+            roleTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Network error or API not available.</td></tr>`;
+            console.error('Error fetching roles:', error);
+            displayMessage('Failed to connect to the server. Please try again later.', 'error');
+        }
+    }
+
+    function renderRoleTable(roles) {
+        roleTableBody.innerHTML = '';
+        if (roles.length === 0) {
+            roleTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No roles found. Add some above!</td></tr>`;
+            return;
+        }
+        roles.forEach(role => {
+            const row = document.createElement('tr');
+            row.dataset.role = JSON.stringify(role);
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${role.id}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${role.name}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${role.description || 'N/A'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${role.created_at || 'N/A'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <a href="#" class="text-blue-600 hover:text-blue-900 mr-4 edit-role-btn" data-role-id="${role.id}">Edit</a>
+                    <a href="#" class="text-red-600 hover:text-red-900 delete-role-btn" data-role-id="${role.id}">Delete</a>
+                </td>
+            `;
+            roleTableBody.appendChild(row);
+        });
+    }
+
+    roleForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const roleData = {
+            name: roleManageNameInput.value.trim(),
+            description: roleManageDescriptionInput.value.trim()
+        };
+
+        let method = 'POST';
+        let url = ROLE_API_URL;
+
+        if (editingRoleId) {
+            method = 'PUT';
+            roleData.id = editingRoleId;
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(roleData)
+            });
+            const result = await response.json();
+            if (result.success) {
+                displayMessage(result.message, 'success');
+                resetRoleForm();
+                fetchRoles();
+            } else {
+                displayMessage(result.message, 'error');
+            }
+        } catch (error) {
+            console.error(`Error ${method}ing role:`, error);
+            displayMessage(`Failed to ${method} role due to a network error.`, 'error');
+        }
+    });
+
+    roleTableBody.addEventListener('click', async (event) => {
+        if (event.target.classList.contains('edit-role-btn')) {
+            event.preventDefault();
+            const row = event.target.closest('tr');
+            const roleData = JSON.parse(row.dataset.role);
+            populateRoleFormForEdit(roleData);
+        } else if (event.target.classList.contains('delete-role-btn')) {
+            event.preventDefault();
+            const roleIdToDelete = event.target.dataset.roleId;
+            const confirmed = await showConfirm(`Are you sure you want to delete role ID: ${roleIdToDelete}? This will fail if users are assigned to it.`);
+            if (confirmed) {
+                try {
+                    const response = await fetch(ROLE_API_URL, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: roleIdToDelete })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        displayMessage(result.message, 'success');
+                        fetchRoles();
+                    } else {
+                        displayMessage(result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting role:', error);
+                    displayMessage('Failed to delete role due to a network error.', 'error');
+                }
+            }
+        }
+    });
+
+    // Initial setup: Show users tab by default and fetch data
+    showTab('users');
+});
