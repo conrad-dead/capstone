@@ -150,6 +150,7 @@
                         >
                             <option value="">Select role</option>
                             <!-- Roles will be dynamically loaded here -->
+                            
                         </select>
                     </div>
 

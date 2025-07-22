@@ -48,7 +48,7 @@ switch ($resource) {
                 if ($result = $conn->query($sql)) {
                     while ($row = $result->fetch_assoc()) {
                         $row['role'] = $row['role_name'];
-                        $users[] = $row;
+                        $users[] = $row;    
                     }
                     $result->free();
                     echo json_encode(['success' => true, 'data' => $users]);
@@ -87,22 +87,32 @@ switch ($resource) {
                 } else {
                     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-                    //insert data to the database
-                    $sql = "INSERT INTO users (username, password, role_id, barangay, contact_number) VALUE (?, ?, ?, ?, ?)";
-                    if ($stmt = $conn->prepare($sql)) {
-                        $stmt->bind_param("ssiss", $username, $password, $role_id, $barangay, $contact_number);
-                        if ($stmt->execute()) {
-                            echo json_encode(['success' => true, 'message' => "User '{$username}' created successfully"]);
-                        } else {
-                            if ($conn->error == 1062) {
-                                echo json_encode(['success' => false, 'message' => "Username '{$username}' already exists. Please try again"]);
+                    try {
+                        //insert data to the database
+                        $sql = "INSERT INTO users (username, password, role_id, barangay, contact_number) VALUES (?, ?, ?, ?, ?)";
+
+                        if ($stmt = $conn->prepare($sql)) {
+                            $stmt->bind_param("ssiss", $username, $password, $role_id, $barangay, $contact_number);
+                            if ($stmt->execute()) {
+                                echo json_encode(['success' => true, 'message' => "User '{$username}' created successfully"]);
                             } else {
-                                echo json_encode(['success' => false, 'message' => 'Error creating user: '.$stmt->error]);
+                                if ($conn->error == 1062) {
+                                    echo json_encode(['success' => false, 'message' => "Username '{$username}' already exists. Please try again"]);
+                                } else {
+                                    echo json_encode(['success' => false, 'message' => 'Error creating user: ']);
+                                }
                             }
+                            $stmt->close();
+                        } else {
+                            echo json_encode(['success' => false, 'message' => 'Database error: Could not prepare statement. ']);
                         }
-                        $stmt->close();
-                    } else {
-                        echo json_encode(['success' => false, 'message' => 'Database error: Could not prepare statement. ' .$conn->error]);
+
+                    } catch  (mysqli_sql_exception $e){
+                        if (str_contains($e->getMessage(), 'Duplicate entry')) {
+                            echo json_encode(['success' => false, 'message' => "Username '{$username}' already exists"]);
+                        } else {
+                            echo json_encode(['success' => false, 'message' => 'Database error: '. $e->getMessage()]);
+                        }
                     }
                 }
                 break;
@@ -150,12 +160,19 @@ switch ($resource) {
                         $bind_params[] = $hashed_password;
                     }
 
-                    $bind_params[] = $user_id;
+                    $update_fields .= " WHERE id = ?";
                     $bind_types .= "i";
+                    $bind_params[] = $user_id;
 
-                    $sql = "UPDATE users SET {$update_fields} WHERE id = ?";
+
+                    $sql = "UPDATE users SET $update_fields";
 
                     if ($stmt = $conn->prepare($sql)) {
+
+                        $refs = [];
+                        foreach ($bind_params as $key => $value) {
+                            $refs[$key] = &$bind_params[$key];
+                        }
                         call_user_func_array([$stmt, 'bind_param'], array_merge([$bind_types], $bind_params));
 
                         if ($stmt->execute()) {
@@ -214,7 +231,26 @@ switch ($resource) {
             default:
                 http_response_code(405);
                 echo json_encode(['success' => false, 'message' => 'Method Not allowed for users']);
-                break;
+            break;
+        }
+    break;
+
+    case 'roles':
+        switch ($method) {
+            case 'GET':
+                //list of roles
+                $role = [];
+                $sql = "SELECT id, name, description, created_at FROM roles ORDER BY name ASC";
+                if ($result = $conn->query($sql)) {
+                    while ($row = $result->fetch_assoc()) {
+                        $roles[] = $row;
+                    }
+                    $result->free();
+                    echo json_encode(['success' => true, 'data' => $roles]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Error Fetching roles' . $conn->error]);
+                }
+            break;
         }
 }
 

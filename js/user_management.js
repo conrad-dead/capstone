@@ -173,17 +173,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Dynamic Field Visibility (Barangay) ---
     const barangays = [ // This list should match the one in your PHP file
-        "Aglipay", "Baguio", "Barangay I (Pob.)", "Barangay II (Pob.)", 
-        "Barangay III (Pob.)", "Barangay IV (Pob.)", "Bungcag", "Camasi", 
-        "Central", "Dabburab", "Furao", "Guinatan", "Guisi", "Malasin", 
-        "Mabini", "Union"
+        "Barcolan", "Buenavista", "Dammao", "District I (Pob.)", 
+        "District II (Pob.)", "District III (Pob.)", "Furao", "Guibang", 
+        "Lenzon", "Linglingay", "Mabini", "Pintor", "Rizal", "Songsong", 
+        "Union", "Upi"
     ];
 
     if (roleSelect) {
         roleSelect.addEventListener('change', () => {
             const selectedRoleOption = roleSelect.options[roleSelect.selectedIndex];
             // Check the text content of the selected option to determine if it's 'Bhw'
-            if (selectedRoleOption && selectedRoleOption.textContent === 'Bhw') {
+            if (selectedRoleOption && selectedRoleOption.textContent === 'bhw') {
                 if (barangayField) barangayField.classList.remove('hidden');
                 if (barangayInput) barangayInput.setAttribute('required', 'required');
             } else {
@@ -324,8 +324,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
             // Determine if selected role is BHW to handle barangay
-            const selectedRoleObject = allRoles.find(role => role.id === userData.role_id);
-            if (selectedRoleObject && selectedRoleObject.name === 'bhw' && barangayInput && barangayInput.value.trim() !== '') {
+            const selectedRoleObject = allRoles.find(role => parseInt(role.id) === userData.role_id);
+            if (
+                selectedRoleObject &&
+                selectedRoleObject.name.toLowerCase() === 'bhw' &&
+                barangayInput &&
+                barangayInput.value.trim() !== ''
+            ) {
                 userData.barangay = barangayInput.value.trim();
             } else {
                 userData.barangay = null;
@@ -340,6 +345,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
+                console.log('Submitting user data:', userData);
+                console.log('Selected Role:', selectedRoleObject);
+                console.log('Barangay value:', barangayInput.value);
+                console.log('Final user data:', userData);
                 const response = await fetch(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
@@ -347,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 const result = await response.json();
-
+    
                 if (result.success) {
                     displayMessage(result.message, 'success');
                     resetUserForm();
