@@ -239,7 +239,7 @@ switch ($resource) {
         switch ($method) {
             case 'GET':
                 //list of roles
-                $role = [];
+                $roles = [];
                 $sql = "SELECT id, name, description, created_at FROM roles ORDER BY name ASC";
                 if ($result = $conn->query($sql)) {
                     while ($row = $result->fetch_assoc()) {
@@ -251,7 +251,142 @@ switch ($resource) {
                     echo json_encode(['success' => false, 'message' => 'Error Fetching roles' . $conn->error]);
                 }
             break;
+
+            case 'POST':
+                //only admin can create a new role
+                // if (!isAdmin($conn, $authenticated_user_role_id)) {
+                //     http_response_code(403);
+                //     echo json_encode(['success' => false, 'message' => 'Access Denied: Only administrator can create roles']);
+                //     break;
+                // }
+                
+                $input = json_decode(file_get_contents('php://input'), true);
+                $name = trim($input['name']);
+                $description = trim($input['description']);
+
+                if (empty($name)) {
+                    echo json_encode(['success' => false, 'message' => 'Role name is required']);
+                } else {
+                    $sql = "INSERT INTO roles (name, description) VALUES (?,?)";
+                    if ($stmt = $conn->prepare($sql)) {
+                        $stmt->bind_param("ss", $name, $description);
+                        if ($stmt->execute()) {
+                            echo json_encode(['success' => true, 'message' => "Role '{$name}' created successfully!"]);
+                        } else {
+                            if ($conn->error == 1062) {
+                                echo json_encode(['success' => false, 'message' => "Role '{$name}' already exist."]);
+                            } else {
+                                echo json_encode(['success' => false, 'message' => 'Error creating role: ' . $stmt->error]);
+                            }
+                        }
+                        $stmt->close();
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Database error: Could not prepare statement. ' . $conn->error]);
+                    }
+                }
+                break;
+            
+            case 'PUT':
+                //only admin can update role
+                // if (!isAdmin($conn, $authenticated_user_role_id)) {
+                //     http_response_code(403); // Forbidden
+                //     echo json_encode(['success' => false, 'message' => 'Access Denied: Only administrators can update roles.']);
+                //     break;
+                // }
+
+                $input = json_decode(file_get_contents('php://input'), true);
+                $role_id = intval($input['id'] ?? 0);
+                $name = trim($input['name']);
+                $description = trim($input['description']);
+
+                if ($role_id <= 0 || empty($name)) {
+                    echo json_encode(['success' => false, 'message' => 'Role id and name are required']);
+                } else {
+                    $sql = "UPDATE roles SET name = ?, description = ? WHERE id = ?";
+                    if ($stmt = $conn->prepare($sql)) {
+                        $stmt->bind_param("ssi", $name, $description, $role_id);
+                        if ($stmt->execute()) {
+                            if ($stmt->affected_rows > 0) {
+                                echo json_encode(['success' => true, 'message' => "Role (ID: {$role_id}) update to '{$name}' successfully"]);
+                            } else {
+                                echo json_encode(['success' => false, 'message' => "No changes made or role (ID: {$role_id}) not found"]);
+                            }
+                        } else {
+                            if ($conn->error == 1062) {
+                                echo json_encode(['success' => false, 'message' => "Role '{$name}' already exist"]);
+                            } else {
+                                echo json_encode(['success' => false, 'message' => 'Error Updating role: '. $stmt->error]);
+                            }
+                        }
+                        $stmt->close();
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Database error: Could not prepare update statement.' . $conn->error]);
+                    }
+                }
+                break;
+            
+            case 'DELETE':
+                //only admin can delete role
+                // if (!isAdmin($conn, $authenticated_user_role_id)) {
+                //     http_response_code(403); // Forbidden
+                //     echo json_encode(['success' => false, 'message' => 'Access Denied: Only administrators can delete roles.']);
+                //     break;
+                // }
+
+                $input = json_decode(file_get_contents('php://input'), true);
+                $role_id = intval($input['id'] ?? 0);
+                
+                if ($role_id <= 0) {
+                    echo json_encode(['success' => false, 'message' => 'Invalid role id']);
+                } else {
+                    // check if any users are assigned to this role 
+                    $sql_check_users = "SELECT COUNT(*) AS user_count FROM users WHERE role_id = ?";
+                    if ($stmt_check = $conn->prepare($sql_check_users)) {
+                        $stmt_check->bind_param("i", $role_id);
+                        $stmt_check->execute();
+                        $check_result = $stmt_check->get_result()->fetch_assoc();
+                        $stmt_check->close();
+
+                        if ($check_result['user_count'] > 0) {
+                            echo json_encode(['success' => false, 'message' => "Cannot delete role (ID: {$role_id}) because it has {$check_result['user_count']} assigned users. Reassign first! "]);
+                            break;
+                        }
+                    }
+
+                    $sql = "DELETE FROM roles WHERE id = ?";
+                    if ($stmt = $conn->prepare($sql)) {
+                        $stmt->bind_param("i", $role_id);
+                        if ($stmt->execute()) {
+                            if ($stmt->affected_rows > 0) {
+                                echo json_encode(['success' => true, 'message' => "Role (ID: {$role_id}) deleted successfully"]);
+                            } else {
+                                echo json_encode(['success' => false, 'message' => "Role (ID: {$role_id}) not found or already deleted."]);
+                            }
+                        } else {
+                            echo json_encode(['success' => false, 'message' => 'Error deleting role: '. $stmt->error]);
+                        }
+                        $stmt->close();
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Database error: Could not prepare delete statement. ' . $conn->error]);
+                    }
+                }
+                break;
+            
+            default:
+                http_response_code(405); 
+                echo json_encode(['success' => false, 'message' => 'Method not allowed.']);
+                break;
+           
         }
+        break;
+        
+    default:
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid API resource specified.']);
+        break;
 }
+
+$conn->close();
+exit();
 
 ?>
