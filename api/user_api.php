@@ -1,6 +1,6 @@
 <?php
 
-//session_start();
+session_start();
 
 require_once '../db/conn.php';
 
@@ -92,7 +92,8 @@ switch ($resource) {
                         $sql = "INSERT INTO users (username, password, role_id, barangay, contact_number) VALUES (?, ?, ?, ?, ?)";
 
                         if ($stmt = $conn->prepare($sql)) {
-                            $stmt->bind_param("ssiss", $username, $password, $role_id, $barangay, $contact_number);
+                            // palitan mo nang hashed_passowrd yun password!
+                            $stmt->bind_param("ssiss", $username, $hashed_password, $role_id, $barangay, $contact_number);
                             if ($stmt->execute()) {
                                 echo json_encode(['success' => true, 'message' => "User '{$username}' created successfully"]);
                             } else {

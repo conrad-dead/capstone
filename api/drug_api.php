@@ -1,5 +1,7 @@
 <?php
 
+session_start();
+
 include_once "../db/conn.php";
 
 if ($conn->connect_error) {

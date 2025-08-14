@@ -1,10 +1,10 @@
 <?php
     $current_page = basename($_SERVER['PHP_SELF']);
-    // session_start();
-    // if(!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
-    //     header('location: login.html');
-    //     exit();
-    // }
+    session_start();
+    if(!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+        header('location: ../login.php');
+        exit();
+    }
 
 
 ?>

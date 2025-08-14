@@ -1,7 +1,19 @@
+<?php
+// session_start();
+$is_logged_in = isset($_SESSION['user_id']);
+$user_role_id = $_SESSION['user_role_id'];
+?>
+
+<?php if ($is_logged_in):?>
 <!-- Sidebar -->
 <nav class="flex-1 overflow-y-auto">
     <!-- Top Navigation Links -->
     <div class="px-2 py-4 space-y-1">
+
+        <a href="admin_dashboard.php" class="flex items-center space-x-2 py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 'bg-gray-900 text-white' : 'text-gray-300'; ?>">
+            <span>Welcome <?php echo htmlspecialchars($_SESSION['username']);?></span>
+        </a>
+
         <a href="admin_dashboard.php" class="flex items-center space-x-2 py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 <?php echo $current_page == 'admin_dashboard.php' ? 'bg-gray-900 text-white' : 'text-gray-300'; ?>">
             <!-- Disease Overview -->
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,6 +34,7 @@
             <span>Location Analysis</span>
         </a>
 
+        <?php if ($user_role_id == 1 || $user_role_id == 2): // admin and pharmacists can access this one?>
         <a href="drug_inventory.php" class="flex items-center space-x-2 py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 <?php echo $current_page == 'drug_inventory.php' ? 'bg-gray-900 text-white' : 'text-gray-300'; ?>">
             <!-- Drug Inventory Icon (Pill Bottle) -->
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -29,6 +42,7 @@
             </svg>
             <span>Drug Inventory</span>
         </a>
+        <?php endif; ?>
 
         <a href="#" class="flex items-center space-x-2 py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">
             <!-- Reports -->
@@ -40,6 +54,8 @@
             <span>Reports</span>
         </a>
 
+        
+        <?php if ($user_role_id == 1): //only admin can go in user management?>
         <a href="user_management.php" class="flex items-center space-x-2 py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 <?php echo $current_page == 'user_management.php' ? 'bg-gray-900 text-white' : 'text-gray-300'; ?>">
             <!-- User Management -->
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,21 +65,32 @@
             </svg>
             <span>User Management</span>
         </a>
-
+        <?php endif; ?>
+    <!-- 
         <a href="#" class="flex items-center space-x-2 py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">
-            <!-- Schedule -->
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
             </path>
             </svg>
             <span>Schedule</span>
-        </a>
+        </a> -->
     </div>
 </nav>
 
             <!-- Bottom Link (Settings) -->
 <div class="px-2 border-t border-gray-700">
+
+    <a href="../logout.php" class="flex items-center space-x-2 py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span>Logout</span>
+    </a>
+
     <a href="#" class="flex items-center space-x-2 py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -74,3 +101,5 @@
         <span>Settings</span>
     </a>
 </div>
+
+<?php endif;?>
