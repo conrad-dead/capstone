@@ -11,5 +11,6 @@
 </head>
 <body>
     <h1>Hello to clinician dashboard</h1>
+    <a href="../logout.php">logout click mo</a>
 </body>
 </html>
