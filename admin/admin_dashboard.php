@@ -1,11 +1,12 @@
 <?php
-    $current_page = basename($_SERVER['PHP_SELF']);
-    session_start();
-    if(!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
-        header('location: ../login.php');
-        exit();
-    }
 
+
+    session_start();
+    $current_page = basename($_SERVER['PHP_SELF']);
+    // if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
+    //     header('Location: ../login.php');
+    //     exit();
+    // }
 
 ?>
 
@@ -56,8 +57,17 @@
 
             <main class="p-6">
             <!-- Add charts, tables, etc. -->
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <h3 class="text-lg font-semibold text-gray-700">RHU Team</h3>
+                    <p class="mt-2 text-3xl font-bold text-blue-600" id="user-count">120</p>
+                </div>
+            </div>
             </main>
         </div>
-    </div>    
+    </div>
+    
+    <script src="../js/admin_dashboard.js"></script>
 </body>
 </html>
