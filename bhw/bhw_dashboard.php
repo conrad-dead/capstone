@@ -12,5 +12,6 @@
 <body>
     <h1>Hello to bhw dashboard</h1>
     <a href="../logout.php">logout click mo</a>
+<!--Tangina mo-->
 </body>
 </html>
