@@ -65,6 +65,14 @@
                     </div>
                 </div>
 
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-lg font-semibold text-gray-700">Barangay Count</h3>
+                        <p class="mt-2 text-3xl font-bold text-blue-600" id="barangayCount">0</p>
+                    </div>
+                </div>
+                
+
             <!-- User Section -->
             <section class="bg-white p-6 rounded-xl shadow">
                 <div class="flex justify-between items-center mb-4">
@@ -84,20 +92,47 @@
                         </thead>
                         <tbody id="userTableBody">
                             <tr class="border-t">
-                                <td class="p-3">1</td>
-                                <td class="p-3">Juan Dela Cruz</td>
-                                <td class="p-3">juan@example.com</td>
-                                <td class="p-3">Admin</td>
-                                <td class="p-3">
-                                    <button class="text-blue-600 hover:underline">Edit</button>
-                                    <button class="text-red-600 hover:underline ml-2">Delete</button>
-                                </td>
+                                
                             </tr>
                             
                         </tbody>
                     </table>
                 </div>
             </section>
+
+            <!-- drug Section -->
+            <section class="bg-white p-6 rounded-xl shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-800">Medicine</h3>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">+ Add Drug</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="p-3 text-left text-gray-700">#</th>
+                                <th class="p-3 text-left text-gray-700">Name</th>
+                                <th class="p-3 text-left text-gray-700">Category</th>
+                                <th class="p-3 text-left text-gray-700">QUANTITY</th>
+                                <th class="p-3 text-left text-gray-700">EXPIRY DATE</th>
+                                <th class="p-3 text-left text-gray-700">ACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody id="drugTableBody">
+                            <tr class="border-t">
+                                
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="drugPagination" class="flex justify-center items-center space-x-2 mt-6">
+                    <!-- Pagination buttons will be rendered here by JavaScript -->
+                </div>
+            </section>
+
+
             </main>
         </div>
     </div>
