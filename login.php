@@ -10,14 +10,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (empty($username) || empty($password)) {
         $login_error = "Please enter both username and password.";
     } else {
-        $sql = "SELECT id, username, password, role_id FROM users WHERE username = ?";
+        $sql = "SELECT u.id, u.username, u.password, u.role_id, r.name AS role_name
+                FROM users u
+                JOIN roles r ON u.role_id = r.id
+                WHERE u.username = ?";
         if ($stmt = $conn->prepare($sql)) {
             $stmt->bind_param("s", $username);
             $stmt->execute();
             $stmt->store_result();
 
             if ($stmt->num_rows == 1) {
-                $stmt->bind_result($id, $db_username, $hashed_password, $role_id);
+                $stmt->bind_result($id, $db_username, $hashed_password, $role_id, $role_name);
                 $stmt->fetch();
 
                 if (password_verify($password, $hashed_password)) {
@@ -25,17 +28,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     session_regenerate_id(true); // Regenerate session ID for security
                     $_SESSION['user_id'] = $id;
                     $_SESSION['username'] = $db_username;
-                    $_SESSION['user_role_id'] = $role_id; // Store role ID in session
+                    $_SESSION['user_role_id'] = (int)$role_id; // Store role ID in session
+                    $_SESSION['user_role_name'] = $role_name; // Store role name in session
 
 
-                    //redirect to the respective dashboard
-                    if ($_SESSION['user_role_id'] === 1) {
+                    // redirect to the respective dashboard based on role name
+                    $role_name_lc = strtolower(trim($role_name));
+                    if ($role_name_lc === 'admin') {
                         header('Location: admin/admin_dashboard.php');
                         exit();
-                    }
-
-                    if ($_SESSION['user_role_id'] == 2) {
+                    } elseif ($role_name_lc === 'clinician') {
                         header('Location: clinician/clinician_dashboard.php');
+                        exit();
+                    } elseif ($role_name_lc === 'pharmacist' || $role_name_lc === 'pharmacists') {
+                        header('Location: pharmacists/pharmacists_dashboard.php');
+                        exit();
+                    } elseif ($role_name_lc === 'bhw') {
+                        header('Location: bhw/bhw_dashboard.php');
+                        exit();
+                    } else {
+                        // fallback: send non-admin unknown roles to login
+                        header('Location: login.php');
                         exit();
                     }
 
