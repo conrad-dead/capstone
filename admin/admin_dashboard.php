@@ -77,7 +77,7 @@
             <section class="bg-white p-6 rounded-xl shadow">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-semibold text-gray-800">Users</h3>
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">+ Add User</button>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg" id="openAddUserModal">+ Add User</button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse">
@@ -104,7 +104,7 @@
             <section class="bg-white p-6 rounded-xl shadow">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-semibold text-gray-800">Medicine</h3>
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">+ Add Drug</button>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg" id="addDrugModal">+ Add Drug</button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse">
@@ -132,6 +132,9 @@
                 </div>
             </section>
 
+
+            <!--Modal-->
+            <div id="modalUser"></div>
 
             </main>
         </div>
