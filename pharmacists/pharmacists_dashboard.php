@@ -1,10 +1,11 @@
 <?php
     session_start();
-    $roleName = isset($_SESSION['user_role_name']) ? strtolower($_SESSION['user_role_name']) : '';
-    if (!isset($_SESSION['user_id']) || !in_array($roleName, ['pharmacist','pharmacists'], true)) {
-        header('Location: ../login.php');
-        exit();
-    }
+    $current_page = basename($_SERVER['PHP_SELF']);
+    // $roleName = isset($_SESSION['user_role_name']) ? strtolower($_SESSION['user_role_name']) : '';
+    // if (!isset($_SESSION['user_id']) || !in_array($roleName, ['pharmacist','pharmacists'], true)) {
+    //     header('Location: ../login.php');
+    //     exit();
+    // }
 ?>
 <!DOCTYPE html>
 <html lang="en">
