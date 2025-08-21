@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchUsers();
     fetchDrugs(); 
     fetchAndDisplayBarangayCount();
+
+
+
 });
 
 // ================= USERS =================
@@ -199,3 +202,7 @@ function fetchAndDisplayBarangayCount() {
                 });
         }
 
+
+
+
+//for deleting user in admin dashboard
