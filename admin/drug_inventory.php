@@ -1,6 +1,13 @@
 <?php
     session_start();
     $current_page = basename($_SERVER['PHP_SELF']);
+    $roleOkById = isset($_SESSION['user_role_id']) && in_array((int)$_SESSION['user_role_id'], [1, 2], true);
+    $roleName = isset($_SESSION['user_role_name']) ? strtolower(trim($_SESSION['user_role_name'])) : '';
+    $roleOkByName = in_array($roleName, ['admin', 'pharmacist', 'pharmacists'], true);
+    if (!isset($_SESSION['user_id']) || (!$roleOkById && !$roleOkByName)) {
+        header('Location: ../login.php');
+        exit();
+    }
 
 ?>
 

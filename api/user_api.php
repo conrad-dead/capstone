@@ -15,6 +15,19 @@ header('Content-Type: application/json');
 $method = $_SERVER['REQUEST_METHOD'];
 $resource = $_GET['resource'] ?? '';
 
+// Basic auth guard: require login and admin for write operations
+function require_login() {
+    if (!isset($_SESSION['user_id'])) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+        exit();
+    }
+}
+
+function is_admin(): bool {
+    return isset($_SESSION['user_role_id']) && (int)$_SESSION['user_role_id'] === 1;
+}
+
 
 
 // function for getting the role
@@ -58,6 +71,8 @@ switch ($resource) {
                 break;
             
             case 'POST':
+                require_login();
+                if (!is_admin()) { http_response_code(403); echo json_encode(['success'=>false,'message'=>'Forbidden']); break; }
                 //only allow admin to create users!
                 // if (!isAdmin($conn, $authenticated_user_role_id)) {
                 //     http_response_code(403); // Forbidden
@@ -119,6 +134,8 @@ switch ($resource) {
                 break;
             
             case 'PUT':
+                require_login();
+                if (!is_admin()) { http_response_code(403); echo json_encode(['success'=>false,'message'=>'Forbidden']); break; }
                 
                 //only admin can update user
                 // if (isAdmin($conn, $authenticated_user_role_id)) {
@@ -197,6 +214,8 @@ switch ($resource) {
                 break;
             
             case 'DELETE':
+                require_login();
+                if (!is_admin()) { http_response_code(403); echo json_encode(['success'=>false,'message'=>'Forbidden']); break; }
                 // Only allow 'admin' to delete users
                 // if (!isAdmin($conn, $authenticated_user_role_id)) {
                 //     http_response_code(403); // Forbidden

@@ -1,5 +1,9 @@
 <?php
     session_start();
+    if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role_name']) || strtolower($_SESSION['user_role_name']) !== 'bhw') {
+        header('Location: ../login.php');
+        exit();
+    }
 ?>
 
 <!DOCTYPE html>

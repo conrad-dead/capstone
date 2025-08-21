@@ -1,3 +1,12 @@
+// Fallback displayMessage if not available
+if (typeof displayMessage !== 'function') {
+    function displayMessage(message, type) {
+        console.log((type || 'info') + ': ' + message);
+    }
+}
+
+let allUsers = [];
+
 document.addEventListener('DOMContentLoaded', () => {
     fetchUsersCount();
     fetchUsers();
@@ -31,6 +40,7 @@ async function fetchUsersCount() {
 
 
 async function fetchUsers() {
+        const userTableBody = document.getElementById('userTableBody');
         if (userTableBody) userTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Loading users...</td></tr>`;
         try {
             const response = await fetch('../api/user_api.php?resource=users', { method: 'GET' });
@@ -51,6 +61,7 @@ async function fetchUsers() {
 }
 
 function renderUserTable(users) {
+        const userTableBody = document.getElementById('userTableBody');
         if (userTableBody) userTableBody.innerHTML = '';
         if (users.length === 0) {
             if (userTableBody) userTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No users found in the system. Create one above!</td></tr>`;

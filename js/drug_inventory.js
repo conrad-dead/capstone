@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () =>{
         let rawName = categoryNameInput.value.trim();
         let capitalizeName = rawName.split(' ').filter(word => word.length > 0).map(word => word[0].toUpperCase() + word.slice(1).toLowerCase()).join(' ');
 
-        categoryIdInput.value = capitalizeName;
+        categoryNameInput.value = capitalizeName;
         // const name = categoryNameInput.value.trim();
 
 
@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () =>{
             const row = document.createElement('tr');
             row.dataset.drug = JSON.stringify(drug);
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${drug.id}</td>
+
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${drug.name}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${drug.category_name || 'N/A'}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${drug.quantity}</td>
@@ -434,9 +434,9 @@ document.addEventListener('DOMContentLoaded', () =>{
             } else {
                 displayMessage(result.message, 'error');
             }
-        } catch {
+        } catch (error) {
             console.log(`Error ${method}ing drug: `, error);
-            displayMessage(`Failed to ${method} drug due to a network error: `, `error`);
+            displayMessage(`Failed to ${method} drug due to a network error: `, 'error');
         }
     });
 
