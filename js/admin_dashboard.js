@@ -20,7 +20,13 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchUsers();
     fetchDrugs(); 
     fetchAndDisplayBarangayCount();
+<<<<<<< HEAD
     setupEventListeners();
+=======
+
+
+
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 });
 
 function initializeElements() {
@@ -314,3 +320,7 @@ window.adminDashboard = {
     fetchAndDisplayBarangayCount
 };
 
+
+
+
+//for deleting user in admin dashboard

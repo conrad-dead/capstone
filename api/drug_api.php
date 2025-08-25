@@ -42,6 +42,7 @@ header('Content-Type: application/json');
 
 $method = $_SERVER['REQUEST_METHOD'];
 $resource = $_GET['resource'] ?? ''; // get mo kung anong resource ba category or drugs
+
 // Determine which table stores medicines: prefer table referenced by medicine_distribution FK, else fallback
 function table_exists(mysqli $conn, string $tableName): bool {
     $tableNameEsc = $conn->real_escape_string($tableName);
@@ -117,8 +118,6 @@ function can_manage_inventory(): bool {
     return in_array($roleId, [1, 2], true);
 }
 
-
-
 switch ($resource) {
     case 'categories': 
         switch($method) {
@@ -157,15 +156,80 @@ switch ($resource) {
             case 'PUT':
                 require_login();
                 if (!can_manage_inventory()) { http_response_code(403); echo json_encode(['success'=>false,'message'=>'Forbidden']); break; }
-                // Categories are managed directly in drugs table, so this is not needed
-                echo json_encode(['success' => false, 'message' => 'Category updates not supported in this version']);
+                // update existing category
+                $input = json_decode(file_get_contents('php://input'), true);
+                $category_id = intval($input['id'] ?? 0);
+                $name = trim($input['name'] ?? '');
+
+                if ($category_id <= 0 || empty($name)) {
+                    echo json_encode(['success' => false, 'message' => 'Category Id and name are required for update']);
+                } else {
+                    $sql = "UPDATE medicine_categories SET name = ? WHERE id = ?";
+                    if ($stmt = $conn->prepare($sql)) {
+                        $stmt->bind_param("si", $name, $category_id);
+                        if ($stmt->execute()) {
+                            if ($stmt->affected_rows > 0) {
+                                echo json_encode(['success' => true, 'message' => "Category (ID: {$category_id}) updated to '{$name}' successfully"]);
+                            } else {
+                                echo json_encode(['success' => true, 'message' => "No changes made or category (ID: {$category_id}) not found"]);
+                            }
+                        } else {
+                            if ($conn->errno == 1062) {
+                                echo json_encode(['success' => false, 'message' => "Category '{$name}' already exists"]);
+                            } else {
+                                echo json_encode(['success' => false, 'message' => 'Error updating category: ' .$stmt->error]);
+                            }
+                        }
+                        $stmt->close();
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Database error: Could not prepare update statement.'  .$conn->error]);
+                    }
+                }
                 break;
             
             case 'DELETE':
                 require_login();
                 if (!can_manage_inventory()) { http_response_code(403); echo json_encode(['success'=>false,'message'=>'Forbidden']); break; }
-                // Categories are managed directly in drugs table, so this is not needed
-                echo json_encode(['success' => false, 'message' => 'Category deletions not supported in this version']);
+                //delete category 
+                $input = json_decode(file_get_contents('php://input'), true);
+                $category_id = intval($input['id'] ?? 0);
+                
+                if ($category_id <= 0) {
+                    echo json_encode(['success' => false, 'message' => 'Invalid category ID for deletion']);
+                } else {
+                    // check if there is medicine associated with this category before deleting
+                    $sql_check_medicines = "SELECT COUNT(*) AS medicine_count FROM " . $MED_TABLE . " WHERE category_id = ?";
+
+                    if ($stmt_check = $conn->prepare($sql_check_medicines)) {
+                        $stmt_check->bind_param('i', $category_id);
+                        $stmt_check->execute();
+                        $check_result = $stmt_check->get_result()->fetch_assoc();
+                        $stmt_check->close();
+
+                        if ($check_result['medicine_count'] > 0) {
+                            echo json_encode(['success' => false, 'message' => "Cannot delete category (ID: {$category_id}) because it has {$check_result['medicine_count']} associated medicines."]);
+                            break;
+                        }
+                    }
+
+                    $sql = "DELETE FROM medicine_categories WHERE id = ?";
+                    if ($stmt = $conn->prepare($sql)) {
+                        $stmt->bind_param('i', $category_id);
+                        if ($stmt->execute()) {
+                            if ($stmt->affected_rows > 0) {
+                                echo json_encode(['success' => true, 'message' => "Category (ID: {$category_id}) Deleted Successfully"]);
+                            } else {
+                                echo json_encode(['success' => false, 'message' => "Category (ID: {$category_id}) not found or already deleted"]);
+                            }
+                        } else {
+                            echo json_encode(['success' => false, 'message' => 'Error deleting category: '. $stmt->error]);
+                        }
+                        $stmt->close();
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Database error: Could not prepare delete statement. ' .$conn->error]);
+                    }
+
+                }
                 break;
 
             default:
@@ -230,8 +294,8 @@ switch ($resource) {
                 $quantity = intval($input['quantity'] ?? 0);
                 $expiry_date = trim($input['expiry_date'] ?? '');
 
-                if (empty($name) || $category_id <= 0 || $quantity < 0 || empty($expiry_date)) {
-                    echo json_encode(['success' => false, 'message' => 'All drug fields are required']);
+                if (empty($name) || $category_id <= 0 || $quantity < 0) {
+                    echo json_encode(['success' => false, 'message' => 'Drug name, category, and quantity are required']);
                 } else {
                                          $sql = "INSERT INTO " . $MED_TABLE . " (name, category_id, quantity, expiry_date) VALUES (?, ?, ?, ?)";
                      if ($stmt = $conn->prepare($sql)) {
@@ -258,8 +322,8 @@ switch ($resource) {
                 $quantity = intval($input['quantity'] ?? 0);
                 $expiry_date = trim($input['expiry_date'] ?? '');
 
-                if ($drug_id <= 0 || empty($name) || $category_id <= 0 || $quantity < 0 || empty($expiry_date)) {
-                    echo json_encode(['success' => false, 'message' => 'Drug ID and all fields are required and valid for update.']);
+                if ($drug_id <= 0 || empty($name) || $category_id <= 0 || $quantity < 0) {
+                    echo json_encode(['success' => false, 'message' => 'Drug ID, name, category, and quantity are required for update.']);
                 } else {
                                          $sql = "UPDATE " . $MED_TABLE . " SET name = ?, category_id = ?, quantity = ?, expiry_date = ? WHERE id = ?";
                      if ($stmt = $conn->prepare($sql)) {
@@ -294,7 +358,7 @@ switch ($resource) {
                         $stmt->bind_param("i", $drug_id);
                         if ($stmt->execute()) {
                             if ($stmt->affected_rows > 0) {
-                                echo json_encode(['success' => true, 'message' => "Drug (ID: {$drug_id}) deleted successfully."]);
+                                echo json_encode(['success' => true, 'message' => "Drug (ID: {$drug_id}) deleted successfully!"]);
                             } else {
                                 echo json_encode(['success' => false, 'message' => "Drug (ID: {$drug_id}) not found or already deleted."]);
                             }
@@ -309,223 +373,17 @@ switch ($resource) {
                 break;
 
             default: 
-                http_response_code(405);
+                http_response_code(405); // Method Not Allowed
                 echo json_encode(['success' => false, 'message' => 'Method Not Allowed for drugs.']);
                 break;
         }
         break;
-    case 'distributions':
-        switch ($method) {
-            case 'GET':
-                require_login();
-                // Aggregates
-                $aggregate = $_GET['aggregate'] ?? '';
-                $period = strtolower($_GET['period'] ?? '');
-                $stats = strtolower($_GET['stats'] ?? '');
-                if ($stats === 'summary') {
-                    // KPI summary: distributions today (records), total items distributed this month (sum), low stock items (<20)
-                    $summary = ['distributions_today' => 0, 'distributed_month_quantity' => 0, 'low_stock_count' => 0];
-                    // today count
-                    if ($res = $conn->query("SELECT COUNT(*) AS c FROM medicine_distribution WHERE DATE(date_issued) = CURRENT_DATE()")) {
-                        $row = $res->fetch_assoc();
-                        $summary['distributions_today'] = (int)$row['c'];
-                        $res->free();
-                    }
-                    // month sum
-                    if ($res = $conn->query("SELECT COALESCE(SUM(quantity_given),0) AS s FROM medicine_distribution WHERE YEAR(date_issued)=YEAR(CURRENT_DATE()) AND MONTH(date_issued)=MONTH(CURRENT_DATE())")) {
-                        $row = $res->fetch_assoc();
-                        $summary['distributed_month_quantity'] = (int)$row['s'];
-                        $res->free();
-                    }
-                    // low stock
-                    if ($res = $conn->query("SELECT COUNT(*) AS c FROM " . $MED_TABLE . " WHERE " . $MED_COL_QTY . " < 20")) {
-                        $row = $res->fetch_assoc();
-                        $summary['low_stock_count'] = (int)$row['c'];
-                        $res->free();
-                    }
-                    echo json_encode(['success' => true, 'data' => $summary]);
-                    break;
-                }
-                if ($aggregate === 'top' && in_array($period, ['month','year'], true)) {
-                    $dateCondition = $period === 'month' ? "DATE_FORMAT(md.date_issued, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m')" : "YEAR(md.date_issued) = YEAR(CURRENT_DATE())";
-                    $sql = "SELECT m." . $MED_COL_ID . " AS id, m." . $MED_COL_NAME . " AS name, SUM(md.quantity_given) AS total_given
-                            FROM medicine_distribution md
-                            JOIN " . $MED_TABLE . " m ON m." . $MED_COL_ID . " = md.medicine_id
-                            WHERE $dateCondition
-                            GROUP BY m." . $MED_COL_ID . ", m." . $MED_COL_NAME . "
-                            ORDER BY total_given DESC
-                            LIMIT 10";
-                    if ($result = $conn->query($sql)) {
-                        $rows = [];
-                        while ($row = $result->fetch_assoc()) { $rows[] = $row; }
-                        $result->free();
-                        echo json_encode(['success' => true, 'data' => $rows]);
-                    } else {
-                        echo json_encode(['success' => false, 'message' => 'Error fetching analytics: ' . $conn->error]);
-                    }
-                    break;
-                }
-                // List distributions (simple pagination)
-                $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
-                $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 10;
-                $offset = ($page - 1) * $limit;
-                $total = 0;
-                if ($resCount = $conn->query("SELECT COUNT(*) AS total FROM medicine_distribution")) {
-                    $rowc = $resCount->fetch_assoc();
-                    $total = (int)$rowc['total'];
-                    $resCount->free();
-                }
-                $rows = [];
-                $hasMedRecCol = column_exists($conn, 'medicine_distribution', 'medical_record_id');
-                $selectMedRec = $hasMedRecCol ? ", md.medical_record_id, mr.disease_id, mr.diagnosis, mr.treatment" : "";
-                $joinMedRec = $hasMedRecCol ? " LEFT JOIN medical_record mr ON mr.id = md.medical_record_id" : "";
-                $sql = "SELECT md.id, md.medicine_id, m." . $MED_COL_NAME . " AS drug_name, md.quantity_given, md.date_issued, 
-                               md.clinician_id, CONCAT(COALESCE(c.first_name,''),' ',COALESCE(c.last_name,'')) AS clinician_name, '' AS notes, 
-                               p.id AS patient_id, p.patient_code, p.first_name, p.last_name, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
-                               " . $selectMedRec . "
-                        FROM medicine_distribution md
-                        JOIN " . $MED_TABLE . " m ON m." . $MED_COL_ID . " = md.medicine_id
-                        LEFT JOIN patients_table p ON p.id = md.patient_id
-                        LEFT JOIN clinicians_table c ON c.id = md.clinician_id
-                        " . $joinMedRec . "
-                        ORDER BY md.date_issued DESC
-                        LIMIT ? OFFSET ?";
-                if ($stmt = $conn->prepare($sql)) {
-                    $stmt->bind_param('ii', $limit, $offset);
-                    $stmt->execute();
-                    $result = $stmt->get_result();
-                    while ($row = $result->fetch_assoc()) { $rows[] = $row; }
-                    $result->free();
-                    $stmt->close();
-                    echo json_encode(['success' => true, 'data' => $rows, 'total_distributions' => $total, 'page' => $page, 'limit' => $limit]);
-                } else {
-                    echo json_encode(['success' => false, 'message' => 'Error fetching distributions: ' . $conn->error]);
-                }
-                break;
-            case 'POST':
-                require_login();
-                if (!can_manage_inventory()) { http_response_code(403); echo json_encode(['success'=>false,'message'=>'Forbidden']); break; }
-                $rawBody = file_get_contents('php://input');
-                $input = json_decode($rawBody, true);
-                if (!is_array($input)) { http_response_code(400); echo json_encode(['success'=>false,'message'=>'Invalid JSON payload']); break; }
-                // Accept alternate field names from legacy UIs
-                $drug_id = intval($input['drug_id'] ?? $input['medicine_id'] ?? 0);
-                $quantity_given = intval($input['quantity_given'] ?? $input['qty'] ?? 0);
-                $patient_id = intval($input['patient_id'] ?? $input['recipient'] ?? 0);
-                $medical_record_id = intval($input['medical_record_id'] ?? 0);
-                $notes = isset($input['notes']) ? trim($input['notes']) : null;
-                // Quick debug info to server logs
-                error_log('Distribute POST - payload: ' . $rawBody);
-                
-                if ($drug_id <= 0) { http_response_code(400); echo json_encode(['success'=>false,'message'=>'drug_id is required']); break; }
-                if ($quantity_given <= 0) { http_response_code(400); echo json_encode(['success'=>false,'message'=>'quantity_given must be > 0']); break; }
-                if ($patient_id <= 0) { http_response_code(400); echo json_encode(['success'=>false,'message'=>'patient_id is required']); break; }
-                
-                // Transaction: check stock, decrement, insert distribution
-                $conn->begin_transaction();
-                try {
-                    // lock row
-                    $sql = "SELECT " . $MED_COL_QTY . " AS quantity FROM " . $MED_TABLE . " WHERE " . $MED_COL_ID . " = ? FOR UPDATE";
-                    if (!($stmt = $conn->prepare($sql))) { throw new Exception('Prepare failed: ' . $conn->error); }
-                    $stmt->bind_param('i', $drug_id);
-                    $stmt->execute();
-                    $stmt->bind_result($current_qty);
-                    if (!$stmt->fetch()) { $stmt->close(); throw new Exception('Drug not found'); }
-                    $stmt->close();
-                    if ($current_qty < $quantity_given) { throw new Exception('Insufficient stock'); }
-                    
-                    $new_qty = $current_qty - $quantity_given;
-                    $sql = "UPDATE " . $MED_TABLE . " SET " . $MED_COL_QTY . " = ? WHERE " . $MED_COL_ID . " = ?";
-                    if (!($stmt = $conn->prepare($sql))) { throw new Exception('Prepare failed: ' . $conn->error); }
-                    $stmt->bind_param('ii', $new_qty, $drug_id);
-                    if (!$stmt->execute()) { $stmt->close(); throw new Exception('Failed to update stock: ' . $stmt->error); }
-                    $stmt->close();
-                    
-                    // Resolve clinician_id from session -> clinicians_table
-                    $clinicianId = null;
-                    if (table_exists($conn, 'clinicians_table')) {
-                        $sessionUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
-                        $sessionUsername = isset($_SESSION['username']) ? trim($_SESSION['username']) : '';
-                        // Prefer mapping by username
-                        if (!empty($sessionUsername)) {
-                            if ($stmt = $conn->prepare('SELECT id FROM clinicians_table WHERE username = ? LIMIT 1')) {
-                                $stmt->bind_param('s', $sessionUsername);
-                                $stmt->execute();
-                                $stmt->bind_result($cid);
-                                if ($stmt->fetch()) { $clinicianId = (int)$cid; }
-                                $stmt->close();
-                            }
-                        }
-                        // Fallback: try mapping by same numeric id
-                        if ($clinicianId === null && $sessionUserId !== null) {
-                            if ($stmt = $conn->prepare('SELECT id FROM clinicians_table WHERE id = ? LIMIT 1')) {
-                                $stmt->bind_param('i', $sessionUserId);
-                                $stmt->execute();
-                                $stmt->bind_result($cid);
-                                if ($stmt->fetch()) { $clinicianId = (int)$cid; }
-                                $stmt->close();
-                            }
-                        }
-                    }
-                    if ($clinicianId === null) {
-                        // Auto-provision a minimal clinician record for the current user
-                        $sessionUsernameSafe = $conn->real_escape_string($sessionUsername ?: ('user_' . ($sessionUserId ?? 'unknown')));
-                        $roleName = isset($_SESSION['user_role_name']) ? trim((string)$_SESSION['user_role_name']) : '';
-                        $clinicianRole = in_array($roleName, ['Doctor','Nurse','MidWife','Other'], true) ? $roleName : 'Other';
-                        // Required NOT NULL columns: first_name, last_name, role
-                        $firstName = $sessionUsernameSafe;
-                        $lastName = 'Account';
-                        $roleId = isset($_SESSION['user_role_id']) ? (int)$_SESSION['user_role_id'] : null;
-
-                        $sqlInsert = 'INSERT INTO clinicians_table (first_name, last_name, role, username, role_id) VALUES (?,?,?,?,?)';
-                        if (!($stmt = $conn->prepare($sqlInsert))) { throw new Exception('Prepare failed: ' . $conn->error); }
-                        $stmt->bind_param('ssssi', $firstName, $lastName, $clinicianRole, $sessionUsernameSafe, $roleId);
-                        if (!$stmt->execute()) { $stmt->close(); throw new Exception('Failed to auto-create clinician record: ' . $stmt->error); }
-                        $stmt->close();
-
-                        $clinicianId = (int)$conn->insert_id;
-                        if ($clinicianId <= 0) { throw new Exception('Failed to resolve clinician after auto-create'); }
-                    }
-
-                    // Insert distribution. If medical_record_id column exists and provided, include it.
-                    $hasMedRecCol = column_exists($conn, 'medicine_distribution', 'medical_record_id');
-                    if ($hasMedRecCol && $medical_record_id > 0) {
-                        // Validate medical record existence
-                        if (!($stmt = $conn->prepare('SELECT 1 FROM medical_record WHERE id = ?'))) { throw new Exception('Prepare failed: ' . $conn->error); }
-                        $stmt->bind_param('i', $medical_record_id);
-                        $stmt->execute();
-                        $stmt->store_result();
-                        if ($stmt->num_rows === 0) { $stmt->close(); throw new Exception('medical_record_id not found'); }
-                        $stmt->close();
-
-                        $sql = "INSERT INTO medicine_distribution (medicine_id, patient_id, medical_record_id, quantity_given, date_issued, clinician_id) VALUES (?,?,?,?,CURDATE(),?)";
-                        if (!($stmt = $conn->prepare($sql))) { throw new Exception('Prepare failed: ' . $conn->error); }
-                        $stmt->bind_param('iiiii', $drug_id, $patient_id, $medical_record_id, $quantity_given, $clinicianId);
-                    } else {
-                        $sql = "INSERT INTO medicine_distribution (medicine_id, patient_id, quantity_given, date_issued, clinician_id) VALUES (?,?,?,CURDATE(),?)";
-                        if (!($stmt = $conn->prepare($sql))) { throw new Exception('Prepare failed: ' . $conn->error); }
-                        $stmt->bind_param('iiii', $drug_id, $patient_id, $quantity_given, $clinicianId);
-                    }
-                    if (!$stmt->execute()) { $stmt->close(); throw new Exception('Failed to record distribution: ' . $stmt->error); }
-                    $stmt->close();
-                    
-                    $conn->commit();
-                    echo json_encode(['success'=>true,'message'=>'Distribution recorded and stock updated','new_quantity'=>$new_qty]);
-                } catch (Exception $e) {
-                    $conn->rollback();
-                    http_response_code(400);
-                    echo json_encode(['success'=>false,'message'=>$e->getMessage()]);
-                }
-                break;
+        
             default:
-                http_response_code(405);
-                echo json_encode(['success'=>false,'message'=>'Method Not Allowed for distributions.']);
+        http_response_code(404); // Not Found
+        echo json_encode(['success' => false, 'message' => 'Resource not found']);
                 break;
         }
-        break;
-    default:
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Invalid API resource specified.']);
-        break;
-}
+
+$conn->close();
 ?>

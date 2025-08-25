@@ -460,14 +460,14 @@
                                 </div>
                                 ${!alert.read ? '<span class="bg-blue-500 text-white text-xs rounded-full px-2 py-1">New</span>' : ''}
                             </div>
-                            ${alert.drug ? `
-                                <div class="mt-2 text-xs text-gray-600">
-                                    <span class="font-medium">Drug ID:</span> ${alert.drug.id} | 
-                                    <span class="font-medium">Category:</span> ${alert.drug.category || 'N/A'} | 
-                                    <span class="font-medium">Quantity:</span> ${alert.drug.quantity} | 
-                                    <span class="font-medium">Expiry:</span> ${alert.drug.expiry_date || 'N/A'}
-                                </div>
-                            ` : ''}
+                                                         ${alert.drug ? `
+                                 <div class="mt-2 text-xs text-gray-600">
+                                     <span class="font-medium">Drug ID:</span> ${alert.drug.id} | 
+                                     <span class="font-medium">Category:</span> ${alert.drug.category_name || 'N/A'} | 
+                                     <span class="font-medium">Quantity:</span> ${alert.drug.quantity} | 
+                                     <span class="font-medium">Expiry:</span> ${alert.drug.expiry_date || 'N/A'}
+                                 </div>
+                             ` : ''}
                         </div>
                         <div class="flex items-center space-x-2">
                             ${!alert.read ? 

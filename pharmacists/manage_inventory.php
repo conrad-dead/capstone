@@ -252,7 +252,7 @@
         </div>
     </div>
 
-    <script src="../js/pharmacists_dashboard.js"></script>
+    <script src="../js/pharmacists_dashboard_clean.js"></script>
 </body>
 </html>
 

@@ -155,43 +155,259 @@
         <div class="flex-1 p-6">
             <header class="bg-white shadow-sm rounded-lg p-6 mb-6 border-l-4 border-blue-500">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-800">Reports & Analytics</h1>
-                    <p class="text-gray-600 mt-1">View drug distribution reports and analytics</p>
+                    <h1 class="text-3xl font-bold text-gray-800">Medicine Inventory Reports</h1>
+                    <p class="text-gray-600 mt-1">View medicine inventory analytics and statistics</p>
                 </div>
             </header>
             <main class="space-y-8">
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Total Medicines</p>
+                                <p class="text-2xl font-semibold text-gray-900" id="totalMedicines">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Categories</p>
+                                <p class="text-2xl font-semibold text-gray-900" id="totalCategories">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-500">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Low Stock Items</p>
+                                <p class="text-2xl font-semibold text-gray-900" id="lowStockItems">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-500">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Expiring Soon</p>
+                                <p class="text-2xl font-semibold text-gray-900" id="expiringSoon">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Medicine by Category Chart -->
+                    <section class="bg-white rounded-lg shadow-xl p-8">
+                        <h2 class="text-xl font-semibold mb-4">Medicines by Category</h2>
+                        <canvas id="categoryChart" height="300"></canvas>
+                    </section>
+
+                    <!-- Stock Levels Chart -->
+                    <section class="bg-white rounded-lg shadow-xl p-8">
+                        <h2 class="text-xl font-semibold mb-4">Stock Levels Overview</h2>
+                        <canvas id="stockChart" height="300"></canvas>
+                    </section>
+                </div>
+
+                <!-- Top Categories Table -->
                 <section class="bg-white rounded-lg shadow-xl p-8">
-                    <h2 class="text-xl font-semibold mb-4">Top Distributed Drugs</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                            <h3 class="text-lg font-semibold mb-2">This Month</h3>
-                            <canvas id="chartTopMonth" height="200"></canvas>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-semibold mb-2">This Year</h3>
-                            <canvas id="chartTopYear" height="200"></canvas>
-                        </div>
+                    <h2 class="text-xl font-semibold mb-4">Top Medicine Categories</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicine Count</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Quantity</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categoryTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
                     </div>
                 </section>
             </main>
         </div>
     </div>
+
     <script>
-        async function fetchTop(period) {
-            const response = await fetch('../api/drug_api.php?resource=distributions&aggregate=top&period=' + period);
-            return response.json();
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadInventoryData();
+        });
+
+        async function loadInventoryData() {
+            try {
+                // Fetch medicine data
+                const response = await fetch('../api/drug_api.php?resource=drugs');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const medicines = data.data || [];
+                    updateDashboardStats(medicines);
+                    createCategoryChart(medicines);
+                    createStockChart(medicines);
+                    updateCategoryTable(medicines);
+                } else {
+                    console.error('Failed to load medicine data:', data.message);
+                }
+            } catch (error) {
+                console.error('Error loading inventory data:', error);
+            }
         }
-        (async () => {
-            const [m, y] = await Promise.all([fetchTop('month'), fetchTop('year')]);
-            const monthLabels = (m.data || []).map(r => r.name);
-            const monthData = (m.data || []).map(r => parseInt(r.total_given));
-            const yearLabels = (y.data || []).map(r => r.name);
-            const yearData = (y.data || []).map(r => parseInt(r.total_given));
-            const ctxM = document.getElementById('chartTopMonth').getContext('2d');
-            const ctxY = document.getElementById('chartTopYear').getContext('2d');
-            new Chart(ctxM, { type: 'bar', data: { labels: monthLabels, datasets: [{ label: 'Qty Given (Month)', data: monthData, backgroundColor: '#60a5fa' }] }, options: { responsive: true, plugins: { legend: { display: false } } } });
-            new Chart(ctxY, { type: 'bar', data: { labels: yearLabels, datasets: [{ label: 'Qty Given (Year)', data: yearData, backgroundColor: '#34d399' }] }, options: { responsive: true, plugins: { legend: { display: false } } } });
-        })();
+
+        function updateDashboardStats(medicines) {
+            const totalMedicines = medicines.length;
+            const categories = new Set(medicines.map(m => m.category_id)).size;
+            const lowStockItems = medicines.filter(m => m.quantity <= 20).length;
+            const today = new Date();
+            const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+            const expiringSoon = medicines.filter(m => {
+                if (!m.expiry_date) return false;
+                const expiryDate = new Date(m.expiry_date);
+                return expiryDate <= thirtyDaysFromNow && expiryDate >= today;
+            }).length;
+
+            document.getElementById('totalMedicines').textContent = totalMedicines;
+            document.getElementById('totalCategories').textContent = categories;
+            document.getElementById('lowStockItems').textContent = lowStockItems;
+            document.getElementById('expiringSoon').textContent = expiringSoon;
+        }
+
+        function createCategoryChart(medicines) {
+            // Group medicines by category
+            const categoryData = {};
+            medicines.forEach(medicine => {
+                const category = medicine.category_name || 'Unknown';
+                if (!categoryData[category]) {
+                    categoryData[category] = 0;
+                }
+                categoryData[category]++;
+            });
+
+            const labels = Object.keys(categoryData);
+            const data = Object.values(categoryData);
+
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+                            '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function createStockChart(medicines) {
+            const stockLevels = {
+                'High Stock (>100)': medicines.filter(m => m.quantity > 100).length,
+                'Medium Stock (21-100)': medicines.filter(m => m.quantity >= 21 && m.quantity <= 100).length,
+                'Low Stock (1-20)': medicines.filter(m => m.quantity >= 1 && m.quantity <= 20).length,
+                'Out of Stock (0)': medicines.filter(m => m.quantity === 0).length
+            };
+
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(stockLevels),
+                    datasets: [{
+                        label: 'Number of Medicines',
+                        data: Object.values(stockLevels),
+                        backgroundColor: ['#10B981', '#3B82F6', '#F59E0B', '#EF4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCategoryTable(medicines) {
+            // Group medicines by category
+            const categoryStats = {};
+            medicines.forEach(medicine => {
+                const category = medicine.category_name || 'Unknown';
+                if (!categoryStats[category]) {
+                    categoryStats[category] = {
+                        count: 0,
+                        totalQuantity: 0
+                    };
+                }
+                categoryStats[category].count++;
+                categoryStats[category].totalQuantity += parseInt(medicine.quantity) || 0;
+            });
+
+            // Sort by count descending
+            const sortedCategories = Object.entries(categoryStats)
+                .sort(([,a], [,b]) => b.count - a.count)
+                .slice(0, 10); // Top 10
+
+            const totalMedicines = medicines.length;
+            const tbody = document.getElementById('categoryTableBody');
+            tbody.innerHTML = '';
+
+            sortedCategories.forEach(([category, stats]) => {
+                const percentage = ((stats.count / totalMedicines) * 100).toFixed(1);
+                const row = `
+                    <tr class="table-row-hover">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${category}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${stats.count}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${stats.totalQuantity}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${percentage}%</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
     </script>
 </body>
 </html>

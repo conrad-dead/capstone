@@ -16,29 +16,20 @@ document.addEventListener('DOMContentLoaded', () => {
 	const drugTableBody = document.getElementById('drugTableBody');
 	const drugPagination = document.getElementById('drugPagination');
 
-	const dashboardStats = document.getElementById('dashboardStats');
-
 	// --- State ---
 	let editingDrugId = null;
 	let allCategories = [];
-	let allDrugs = [];
 	let currentPage = 1;
 	const drugsPerPage = 10;
-	let filteredDrugs = [];
-	let searchTerm = '';
-	let selectedCategory = '';
 
 	// --- API URLs ---
 	const CATEGORY_API_URL = '../api/drug_api.php?resource=categories';
 	const DRUG_API_URL = '../api/drug_api.php?resource=drugs';
 
-	// --- Constants ---
-	const LOW_STOCK_THRESHOLD = 20;
-	const EXPIRY_WARNING_DAYS = 30;
-
 	// --- Helpers ---
 	function displayMessage(message, type) {
 		if (window.Swal) {
+<<<<<<< HEAD
 			Swal.fire({ 
 				icon: type, 
 				title: (type === 'success' ? 'Success!' : 'Error!'), 
@@ -49,6 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
 				showConfirmButton: false,
 				timer: 3000
 			});
+=======
+			Swal.fire({ icon: type, title: (type === 'success' ? 'Success!' : 'Error!'), text: message, confirmButtonText: 'OK' });
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 		} else {
 			console.log(type + ': ' + message);
 		}
@@ -56,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	async function showConfirm(message) {
 		if (window.Swal) {
+<<<<<<< HEAD
 			const result = await Swal.fire({ 
 				title: 'Are you sure?', 
 				text: message, 
@@ -65,6 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
 				cancelButtonColor: '#d33', 
 				confirmButtonText: 'Yes, proceed!' 
 			});
+=======
+			const result = await Swal.fire({ title: 'Are you sure?', text: message, icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Yes, proceed!' });
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 			return result.isConfirmed;
 		}
 		return confirm(message);
@@ -90,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		editingDrugId = drug.id;
 	}
 
+<<<<<<< HEAD
 
 
 
@@ -351,6 +350,8 @@ document.addEventListener('DOMContentLoaded', () => {
 	}
 
 	// --- Missing Functions ---
+=======
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 	cancelDrugEditButton.addEventListener('click', resetDrugForm);
 
 	function populateDrugCategoryDropDown(categories) {
@@ -365,6 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	async function fetchCategories() {
 		try {
+<<<<<<< HEAD
 			console.log('Fetching categories from:', CATEGORY_API_URL);
 			const response = await fetch(CATEGORY_API_URL, { method: 'GET' });
 			console.log('Categories API response status:', response.status);
@@ -383,15 +385,49 @@ document.addEventListener('DOMContentLoaded', () => {
 				populateFilterDropdown(allCategories); // Populate filter dropdown
 			} else {
 				console.error('Categories API returned error:', result.message);
+=======
+			const response = await fetch(CATEGORY_API_URL, { method: 'GET' });
+			const result = await response.json();
+			if (result.success) {
+				allCategories = result.data;
+				populateDrugCategoryDropDown(allCategories);
+				// also populate distribution drug dropdown with live drugs
+				await populateDistributionDrugDropdown();
+			} else {
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 				displayMessage(result.message, 'error');
 			}
 		} catch (error) {
 			console.error('Error fetching categories:', error);
+<<<<<<< HEAD
 			displayMessage('Failed to load categories: ' + error.message, 'error');
+=======
+			displayMessage('Failed to load categories.', 'error');
+		}
+	}
+
+	async function populateDistributionDrugDropdown() {
+		// Load a large page of drugs for selection
+		try {
+			const response = await fetch(`${DRUG_API_URL}&page=1&limit=1000`);
+			const result = await response.json();
+			if (result.success) {
+				distDrugSelect.innerHTML = '<option value="">Select drug</option>';
+				result.data.forEach(drug => {
+					const opt = document.createElement('option');
+					opt.value = drug.id;
+					opt.textContent = `${drug.name} (Qty: ${drug.quantity})`;
+					distDrugSelect.appendChild(opt);
+				});
+			}
+		} catch (e) {
+			console.log('Error populating distribution drugs', e);
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 		}
 	}
 
 	async function fetchDrugs() {
+<<<<<<< HEAD
 		try {
 			console.log('Fetching drugs from:', DRUG_API_URL);
 			const response = await fetch(DRUG_API_URL, { method: 'GET' });
@@ -411,14 +447,57 @@ document.addEventListener('DOMContentLoaded', () => {
 				renderDrugsTable();
 			} else {
 				console.error('Drugs API returned error:', result.message);
+=======
+		drugTableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Loading drugs...</td></tr>';
+		try {
+			const response = await fetch(`${DRUG_API_URL}&page=${currentPage}&limit=${drugsPerPage}`, { method: 'GET' });
+			const result = await response.json();
+			if (result.success) {
+				renderDrugTable(result.data);
+				renderPaginationControls(result.total_drugs);
+			} else {
+				drugTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Error: ${result.message}</td></tr>`;
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 				displayMessage(result.message, 'error');
 			}
 		} catch (error) {
 			console.error('Error fetching drugs:', error);
+<<<<<<< HEAD
 			displayMessage('Failed to load drugs: ' + error.message, 'error');
 		}
 	}
 
+=======
+			drugTableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Network error or API not available.</td></tr>';
+			displayMessage('Failed to connect to the server. Please try again later.', 'error');
+		}
+	}
+
+	function renderDrugTable(drugs) {
+		drugTableBody.innerHTML = '';
+		if (!drugs || drugs.length === 0) {
+			drugTableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No drugs found. Add some above!</td></tr>';
+			return;
+		}
+		drugs.forEach(drug => {
+			const row = document.createElement('tr');
+			row.dataset.drug = JSON.stringify(drug);
+			row.innerHTML = `
+				<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${drug.id}</td>
+				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${drug.name}</td>
+				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${drug.category_name || 'N/A'}</td>
+				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${drug.quantity}</td>
+				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${drug.expiry_date || 'N/A'}</td>
+				<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+					<a href="#" class="text-blue-600 hover:text-blue-900 mr-4 edit-drug-btn" data-drug-id="${drug.id}">Edit</a>
+					<a href="#" class="text-red-600 hover:text-red-900 delete-drug-btn" data-drug-id="${drug.id}">Delete</a>
+				</td>
+			`;
+			drugTableBody.appendChild(row);
+		});
+	}
+
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 	function renderPaginationControls(totalDrugs) {
 		drugPagination.innerHTML = '';
 		const totalPages = Math.ceil(totalDrugs / drugsPerPage);
@@ -448,6 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		drugPagination.appendChild(nextButton);
 	}
 
+<<<<<<< HEAD
 	// --- Tabs behavior ---
 	function showTab(name) {
 		// Hide all tabs
@@ -458,10 +538,135 @@ document.addEventListener('DOMContentLoaded', () => {
 			if (btn) {
 				btn.classList.remove('bg-blue-50', 'border-blue-500', 'text-blue-700');
 				btn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+=======
+	// ---------------- Distributions --------------------
+	async function fetchDistributions() {
+		distTableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Loading...</td></tr>';
+		try {
+			const response = await fetch(`${DIST_API_URL}&page=${distPage}&limit=${distPerPage}`);
+			const result = await response.json();
+			if (result.success) {
+				renderDistributionTable(result.data);
+				renderDistPagination(result.total);
+			} else {
+				distTableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Error: ${result.message}</td></tr>`;
+			}
+		} catch (e) {
+			distTableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Network error.</td></tr>';
+		}
+	}
+
+	function renderDistributionTable(rows) {
+		distTableBody.innerHTML = '';
+		if (!rows || rows.length === 0) {
+			distTableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No records</td></tr>';
+			return;
+		}
+		rows.forEach(r => {
+			const tr = document.createElement('tr');
+			tr.innerHTML = `
+				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${r.date_issued}</td>
+				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${r.drug_name}</td>
+				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${r.quantity_given}</td>
+				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${r.recipient || 'N/A'}</td>
+			`;
+			distTableBody.appendChild(tr);
+		});
+	}
+
+	function renderDistPagination(total) {
+		distPagination.innerHTML = '';
+		const totalPages = Math.ceil(total / distPerPage);
+		if (totalPages <= 1) return;
+		const prev = document.createElement('button');
+		prev.textContent = 'Previous';
+		prev.disabled = distPage === 1;
+		prev.addEventListener('click', () => { if (distPage > 1) { distPage--; fetchDistributions(); } });
+		distPagination.appendChild(prev);
+		for (let i=1; i<= totalPages; i++) {
+			const b = document.createElement('button');
+			b.textContent = i;
+			if (i === distPage) b.classList.add('active-page');
+			b.addEventListener('click', () => { distPage = i; fetchDistributions(); });
+			distPagination.appendChild(b);
+		}
+		const next = document.createElement('button');
+		next.textContent = 'Next';
+		next.disabled = distPage === totalPages;
+		next.addEventListener('click', () => { if (distPage < totalPages) { distPage++; fetchDistributions(); } });
+		distPagination.appendChild(next);
+	}
+
+	if (distributionForm) {
+		distributionForm.addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const drug_id = parseInt(distDrugSelect.value);
+			const quantity_given = parseInt(distQuantityInput.value);
+			const recipient = distRecipientInput.value.trim() || null;
+			if (!drug_id || !quantity_given || quantity_given <= 0) {
+				displayMessage('Select a drug and enter a valid quantity.', 'error');
+				return;
+			}
+			try {
+				const response = await fetch(DIST_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ drug_id, quantity_given, recipient }) });
+				const result = await response.json();
+				if (result.success) {
+					displayMessage(result.message, 'success');
+					distQuantityInput.value = '';
+					distRecipientInput.value = '';
+					fetchDrugs();
+					populateDistributionDrugDropdown();
+					fetchDistributions();
+				} else {
+					displayMessage(result.message, 'error');
+				}
+			} catch (e) {
+				displayMessage('Failed to record distribution.', 'error');
+			}
+		});
+	}
+
+	// ---------------- Reports -------------------
+	let chartMonth, chartYear;
+	async function fetchTop(period) {
+		const response = await fetch(`${DIST_API_URL}&aggregate=top&period=${period}`);
+		return response.json();
+	}
+
+	async function renderCharts() {
+		try {
+			const [m, y] = await Promise.all([fetchTop('month'), fetchTop('year')]);
+			const monthLabels = (m.data || []).map(r => r.name);
+			const monthData = (m.data || []).map(r => parseInt(r.total_given));
+			const yearLabels = (y.data || []).map(r => r.name);
+			const yearData = (y.data || []).map(r => parseInt(r.total_given));
+			const ctxM = document.getElementById('chartTopMonth').getContext('2d');
+			const ctxY = document.getElementById('chartTopYear').getContext('2d');
+			if (chartMonth) chartMonth.destroy();
+			if (chartYear) chartYear.destroy();
+			chartMonth = new Chart(ctxM, { type: 'bar', data: { labels: monthLabels, datasets: [{ label: 'Qty Given (Month)', data: monthData, backgroundColor: '#60a5fa' }] }, options: { responsive: true, plugins: { legend: { display: false } } } });
+			chartYear = new Chart(ctxY, { type: 'bar', data: { labels: yearLabels, datasets: [{ label: 'Qty Given (Year)', data: yearData, backgroundColor: '#34d399' }] }, options: { responsive: true, plugins: { legend: { display: false } } } });
+		} catch (e) {
+			console.log('Error rendering charts', e);
+		}
+	}
+
+	// Tabs behavior
+	function showTab(name) {
+		// Hide all tabs
+		[tabDistribute, tabReports, tabManagement].forEach(el => { if (el) el.classList.add('hidden'); });
+		
+		// Remove active class from all tab buttons
+		[tabDistributeBtn, tabReportsBtn, tabManagementBtn].forEach(btn => {
+			if (btn) {
+				btn.classList.remove('active', 'border-blue-600');
+				btn.classList.add('border-transparent');
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 			}
 		});
 		
 		// Show selected tab and activate button
+<<<<<<< HEAD
 		if (name === 'reports') { 
 			tabReports.classList.remove('hidden'); 
 			tabReportsBtn.classList.add('bg-blue-50', 'border-blue-500', 'text-blue-700');
@@ -666,6 +871,31 @@ document.addEventListener('DOMContentLoaded', () => {
 	if (tabManagementBtn) tabManagementBtn.addEventListener('click', () => showTab('management'));
 
 	// --- Event Listeners ---
+=======
+		if (name === 'distribute') { 
+			tabDistribute.classList.remove('hidden'); 
+			tabDistributeBtn.classList.add('active', 'border-blue-600');
+			tabDistributeBtn.classList.remove('border-transparent');
+			fetchDistributions(); 
+		}
+		if (name === 'reports') { 
+			tabReports.classList.remove('hidden'); 
+			tabReportsBtn.classList.add('active', 'border-blue-600');
+			tabReportsBtn.classList.remove('border-transparent');
+			renderCharts(); 
+		}
+		if (name === 'management') { 
+			tabManagement.classList.remove('hidden'); 
+			tabManagementBtn.classList.add('active', 'border-blue-600');
+			tabManagementBtn.classList.remove('border-transparent');
+		}
+	}
+	
+	if (tabDistributeBtn) tabDistributeBtn.addEventListener('click', () => showTab('distribute'));
+	if (tabReportsBtn) tabReportsBtn.addEventListener('click', () => showTab('reports'));
+	if (tabManagementBtn) tabManagementBtn.addEventListener('click', () => showTab('management'));
+
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 	// Capitalize drug name words on blur
 	drugNameInput.addEventListener('blur', () => {
 		const raw = drugNameInput.value.trim();
@@ -676,7 +906,10 @@ document.addEventListener('DOMContentLoaded', () => {
 	drugForm.addEventListener('submit', async (event) => {
 		event.preventDefault();
 
+<<<<<<< HEAD
 		// Professional validation
+=======
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 		let rawName = drugNameInput.value.trim();
 		let capitalizeName = rawName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 		drugNameInput.value = capitalizeName;
@@ -688,6 +921,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			expiry_date: drugExpiryDateInput.value
 		};
 
+<<<<<<< HEAD
 		// Validate data before submission
 		const validationErrors = validateDrugData(drugData);
 		if (validationErrors.length > 0) {
@@ -705,6 +939,8 @@ document.addEventListener('DOMContentLoaded', () => {
 			</div>
 		`;
 
+=======
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 		let method = 'POST';
 		let url = DRUG_API_URL;
 		if (editingDrugId) {
@@ -713,6 +949,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 
 		try {
+<<<<<<< HEAD
 			const response = await fetch(url, { 
 				method, 
 				headers: { 'Content-Type': 'application/json' }, 
@@ -723,11 +960,15 @@ document.addEventListener('DOMContentLoaded', () => {
 				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 			}
 			
+=======
+			const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(drugData) });
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 			const result = await response.json();
 			if (result.success) {
 				displayMessage(result.message, 'success');
 				resetDrugForm();
 				fetchDrugs();
+<<<<<<< HEAD
 				
 				// Show success animation
 				if (window.Swal) {
@@ -741,15 +982,22 @@ document.addEventListener('DOMContentLoaded', () => {
 						position: 'top-end'
 					});
 				}
+=======
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 			} else {
 				displayMessage(result.message, 'error');
 			}
 		} catch (error) {
+<<<<<<< HEAD
 			handleApiError(error, `${method} drug`);
 		} finally {
 			// Reset loading state
 			setLoadingState(false, 'drugSubmitButton');
 			drugSubmitButton.innerHTML = originalButtonText;
+=======
+			console.log(`Error ${method}ing drug: `, error);
+			displayMessage(`Failed to ${method} drug due to a network error.`, 'error');
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 		}
 	});
 
@@ -759,6 +1007,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			const row = event.target.closest('tr');
 			const drugData = JSON.parse(row.dataset.drug);
 			populateDrugFormForEdit(drugData);
+<<<<<<< HEAD
 			
 			// Scroll to form
 			document.getElementById('drugForm').scrollIntoView({ 
@@ -810,20 +1059,39 @@ document.addEventListener('DOMContentLoaded', () => {
 						setTimeout(() => {
 							fetchDrugs();
 						}, 300);
+=======
+		} else if (event.target.classList.contains('delete-drug-btn')) {
+			event.preventDefault();
+			const drugIdToDelete = event.target.dataset.drugId;
+			const confirmed = await showConfirm(`Are you sure you want to delete drug ID: ${drugIdToDelete}?`);
+			if (confirmed) {
+				try {
+					const response = await fetch(DRUG_API_URL, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: drugIdToDelete }) });
+					const result = await response.json();
+					if (result.success) {
+						displayMessage(result.message, 'success');
+						fetchDrugs();
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 					} else {
 						displayMessage(result.message, 'error');
 					}
 				} catch (error) {
+<<<<<<< HEAD
 					handleApiError(error, 'delete drug');
 				} finally {
 					// Reset button state
 					deleteBtn.innerHTML = originalText;
 					deleteBtn.disabled = false;
+=======
+					console.log('Error deleting drug: ', error);
+					displayMessage('Failed to delete drug due to a network error.', 'error');
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 				}
 			}
 		}
 	});
 
+<<<<<<< HEAD
 	// --- Auto-refresh functionality ---
 	function startAutoRefresh() {
 		// Refresh data every 5 minutes
@@ -1233,4 +1501,10 @@ document.addEventListener('DOMContentLoaded', () => {
 		console.log('Required elements not found. This might be a different page.');
 	}
 
+=======
+	// Initial load
+	fetchCategories();
+	fetchDrugs();
+	showTab('distribute'); // Start with distribution tab as priority
+>>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
 });
