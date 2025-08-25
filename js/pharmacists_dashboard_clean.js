@@ -99,21 +99,27 @@ document.addEventListener('DOMContentLoaded', () => {
 	function renderDrugTable(drugs) {
 		drugTableBody.innerHTML = '';
 		if (!drugs || drugs.length === 0) {
-			drugTableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No drugs found. Add some above!</td></tr>';
+			drugTableBody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No medicines found. Add some above!</td></tr>';
 			return;
 		}
 		drugs.forEach(drug => {
 			const row = document.createElement('tr');
 			row.dataset.drug = JSON.stringify(drug);
+			row.className = 'table-row-hover';
 			row.innerHTML = `
 				<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${drug.id}</td>
-				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${drug.name}</td>
-				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${drug.category_name || 'N/A'}</td>
-				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${drug.quantity}</td>
-				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${drug.expiry_date || 'N/A'}</td>
+				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">${drug.name}</td>
+				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${drug.category_name || 'N/A'}</td>
+				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${drug.quantity}</td>
+				<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${drug.expiry_date || 'N/A'}</td>
+				<td class="px-6 py-4 whitespace-nowrap text-sm">${getStatusBadge(drug)}</td>
 				<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-					<a href="#" class="text-blue-600 hover:text-blue-900 mr-4 edit-drug-btn" data-drug-id="${drug.id}">Edit</a>
-					<a href="#" class="text-red-600 hover:text-red-900 delete-drug-btn" data-drug-id="${drug.id}">Delete</a>
+					<button class="text-blue-600 hover:text-blue-900 mr-4 edit-drug-btn transition-colors duration-200" data-drug-id="${drug.id}">
+						<i class="fas fa-edit mr-1"></i>Edit
+					</button>
+					<button class="text-red-600 hover:text-red-900 delete-drug-btn transition-colors duration-200" data-drug-id="${drug.id}">
+						<i class="fas fa-trash mr-1"></i>Delete
+					</button>
 				</td>
 			`;
 			drugTableBody.appendChild(row);
@@ -335,7 +341,93 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	}
 
+	// --- Additional Functions ---
+	window.refreshData = async function() {
+		showLoading();
+		try {
+			await fetchCategories();
+			await fetchDrugs();
+			updateStatistics();
+			showNotification('Data refreshed successfully!', 'success');
+		} catch (error) {
+			console.error('Error refreshing data:', error);
+			showNotification('Failed to refresh data', 'error');
+		} finally {
+			hideLoading();
+		}
+	};
+
+	window.clearFilters = function() {
+		if (searchDrugsInput) searchDrugsInput.value = '';
+		if (filterCategorySelect) filterCategorySelect.value = '';
+		if (filterStatusSelect) filterStatusSelect.value = '';
+		// Refresh the table with cleared filters
+		fetchDrugs();
+	};
+
+	function showLoading() {
+		const loadingOverlay = document.getElementById('loadingOverlay');
+		if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+	}
+
+	function hideLoading() {
+		const loadingOverlay = document.getElementById('loadingOverlay');
+		if (loadingOverlay) loadingOverlay.classList.add('hidden');
+	}
+
+	function updateStatistics() {
+		// Update the statistics cards
+		const totalItems = document.getElementById('totalItems');
+		const lowStockCount = document.getElementById('lowStockCount');
+		const expiringCount = document.getElementById('expiringCount');
+		const categoryCount = document.getElementById('categoryCount');
+		const lastUpdated = document.getElementById('lastUpdated');
+
+		if (totalItems) totalItems.textContent = dashboardData.medicines.length || 0;
+		if (lowStockCount) lowStockCount.textContent = dashboardData.medicines.filter(m => m.quantity <= 20).length || 0;
+		if (expiringCount) {
+			const now = new Date();
+			const thirtyDaysFromNow = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+			const expiring = dashboardData.medicines.filter(m => {
+				if (!m.expiry_date) return false;
+				const expiryDate = new Date(m.expiry_date);
+				return expiryDate <= thirtyDaysFromNow && expiryDate >= now;
+			}).length;
+			expiringCount.textContent = expiring || 0;
+		}
+		if (categoryCount) categoryCount.textContent = dashboardData.categories.length || 0;
+		if (lastUpdated) lastUpdated.textContent = 'Just now';
+	}
+
+	function getStatusBadge(medicine) {
+		const now = new Date();
+		const thirtyDaysFromNow = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+		
+		if (medicine.quantity === 0) {
+			return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Out of Stock</span>';
+		} else if (medicine.quantity <= 20) {
+			return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Low Stock</span>';
+		} else if (medicine.expiry_date && new Date(medicine.expiry_date) <= thirtyDaysFromNow && new Date(medicine.expiry_date) >= now) {
+			return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">Expiring Soon</span>';
+		} else {
+			return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Good Stock</span>';
+		}
+	}
+
 	// --- Initialization ---
-	fetchCategories();
-	fetchDrugs();
+	async function initializePage() {
+		showLoading();
+		try {
+			await fetchCategories();
+			await fetchDrugs();
+			updateStatistics();
+		} catch (error) {
+			console.error('Error initializing page:', error);
+			showNotification('Failed to load data', 'error');
+		} finally {
+			hideLoading();
+		}
+	}
+
+	initializePage();
 });
