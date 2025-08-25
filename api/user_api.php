@@ -258,9 +258,10 @@ switch ($resource) {
     case 'roles':
         switch ($method) {
             case 'GET':
-                //list of roles
+                // list of roles
                 $roles = [];
-                $sql = "SELECT id, name, description, created_at FROM roles ORDER BY name ASC";
+                // Some databases may not have created_at column on roles; only select existing columns
+                $sql = "SELECT id, name, description FROM roles ORDER BY name ASC";
                 if ($result = $conn->query($sql)) {
                     while ($row = $result->fetch_assoc()) {
                         $roles[] = $row;
