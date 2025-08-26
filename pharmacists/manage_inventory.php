@@ -153,6 +153,10 @@
                         <i class="fas fa-boxes w-5"></i>
                         <span class="text-sm font-medium">Inventory</span>
                     </a>
+                    <a href="./distribute.php" class="flex items-center space-x-3 p-3 text-blue-100 hover:bg-blue-700 rounded-lg transition-colors duration-200">
+                        <i class="fas fa-hand-holding-medical w-5"></i>
+                        <span class="text-sm font-medium">Distribution</span>
+                    </a>
                     <a href="./reports.php" class="flex items-center space-x-3 p-3 text-blue-100 hover:bg-blue-700 rounded-lg transition-colors duration-200">
                         <i class="fas fa-chart-bar w-5"></i>
                         <span class="text-sm font-medium">Reports</span>
@@ -191,6 +195,10 @@
                         <button onclick="refreshData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
                             <i class="fas fa-sync-alt"></i>
                             <span>Refresh</span>
+                        </button>
+                        <button onclick="testAPIs()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+                            <i class="fas fa-bug"></i>
+                            <span>Debug APIs</span>
                         </button>
                         <button id="addDrugBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
                             <i class="fas fa-plus"></i>
@@ -253,6 +261,18 @@
                     </div>
                 </div>
 
+                <!-- Category Filter Buttons -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Filter by Category</h3>
+                    <div id="categoryButtons" class="flex flex-wrap gap-3">
+                        <button onclick="filterByCategory('all')" class="category-btn active px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2">
+                            <i class="fas fa-th-large"></i>
+                            <span>All Categories</span>
+                        </button>
+                        <!-- Category buttons will be dynamically added here -->
+                    </div>
+                </div>
+
                 <!-- Search and Filters -->
                 <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
                     <div class="flex flex-wrap gap-4">
@@ -262,13 +282,12 @@
                                 <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                             </div>
                         </div>
-                        <select id="filterCategory" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
-                            <option value="">All Categories</option>
-                        </select>
                         <select id="filterStatus" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
                             <option value="">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                            <option value="active">Good Stock</option>
+                            <option value="inactive">Low Stock</option>
+                            <option value="out-of-stock">Out of Stock</option>
+                            <option value="expiring">Expiring Soon</option>
                         </select>
                         <button onclick="clearFilters()" class="px-4 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors duration-200">
                             <i class="fas fa-times"></i>
@@ -392,7 +411,7 @@
         </div>
     </div>
 
-    <script src="../js/pharmacists_dashboard_clean.js"></script>
+    <script src="../js/pharmacists_inventory.js"></script>
 </body>
 </html>
 

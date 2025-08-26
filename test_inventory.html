@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory API Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <h1>Inventory API Test</h1>
+    <div id="results"></div>
+
+    <script>
+        async function testAPI() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing API...</p>';
+            
+            try {
+                // Test categories API
+                console.log('Testing categories API...');
+                const categoriesResponse = await fetch('api/drug_api.php?resource=categories');
+                const categoriesResult = await categoriesResponse.json();
+                console.log('Categories result:', categoriesResult);
+                
+                resultsDiv.innerHTML += `<p><strong>Categories API:</strong> ${JSON.stringify(categoriesResult)}</p>`;
+                
+                // Test drugs API
+                console.log('Testing drugs API...');
+                const drugsResponse = await fetch('api/drug_api.php?resource=drugs&page=1&limit=10');
+                const drugsResult = await drugsResponse.json();
+                console.log('Drugs result:', drugsResult);
+                
+                resultsDiv.innerHTML += `<p><strong>Drugs API:</strong> ${JSON.stringify(drugsResult)}</p>`;
+                
+                if (categoriesResult.success && drugsResult.success) {
+                    resultsDiv.innerHTML += '<p style="color: green;"><strong>✅ All APIs working correctly!</strong></p>';
+                } else {
+                    resultsDiv.innerHTML += '<p style="color: red;"><strong>❌ API errors detected!</strong></p>';
+                }
+                
+            } catch (error) {
+                console.error('API test error:', error);
+                resultsDiv.innerHTML += `<p style="color: red;"><strong>❌ Error:</strong> ${error.message}</p>`;
+            }
+        }
+        
+        // Run test when page loads
+        testAPI();
+    </script>
+</body>
+</html>

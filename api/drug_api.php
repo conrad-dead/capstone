@@ -379,11 +379,317 @@ switch ($resource) {
         }
         break;
         
+    case 'distributions':
+        switch($method) {
+            case 'GET':
+                require_login();
+                
+                // Check if requesting stats
+                if (isset($_GET['stats']) && $_GET['stats'] === 'summary') {
+                    // Get distribution statistics
+                    $stats = [];
+                    
+                    // Today's distributions
+                    $sql_today = "SELECT COUNT(*) as count FROM medicine_distribution WHERE DATE(distribution_date) = CURDATE()";
+                    if ($result = $conn->query($sql_today)) {
+                        $stats['distributions_today'] = $result->fetch_assoc()['count'];
+                        $result->free();
+                    }
+                    
+                    // This month's distributions
+                    $sql_month = "SELECT COUNT(*) as count FROM medicine_distribution WHERE MONTH(distribution_date) = MONTH(CURDATE()) AND YEAR(distribution_date) = YEAR(CURDATE())";
+                    if ($result = $conn->query($sql_month)) {
+                        $stats['distributions_month'] = $result->fetch_assoc()['count'];
+                        $result->free();
+                    }
+                    
+                    // Pending prescriptions
+                    $sql_pending = "SELECT COUNT(*) as count FROM medicine_distribution WHERE status = 'pending'";
+                    if ($result = $conn->query($sql_pending)) {
+                        $stats['pending_prescriptions'] = $result->fetch_assoc()['count'];
+                        $result->free();
+                    }
+                    
+                    // Active doctors this month
+                    $sql_doctors = "SELECT COUNT(DISTINCT doctor_id) as count FROM medicine_distribution WHERE MONTH(distribution_date) = MONTH(CURDATE()) AND YEAR(distribution_date) = YEAR(CURDATE())";
+                    if ($result = $conn->query($sql_doctors)) {
+                        $stats['active_doctors'] = $result->fetch_assoc()['count'];
+                        $result->free();
+                    }
+                    
+                    echo json_encode(['success' => true, 'data' => $stats]);
+                    break;
+                }
+                
+                // Regular distribution listing with pagination
+                $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+                $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 10;
+                $offset = ($page - 1) * $limit;
+                
+                // Build WHERE clause for filters
+                $where_conditions = [];
+                $params = [];
+                $param_types = '';
+                
+                if (!empty($_GET['search'])) {
+                    $search = '%' . $_GET['search'] . '%';
+                    $where_conditions[] = "(p.first_name LIKE ? OR p.last_name LIKE ? OR m.name LIKE ? OR CONCAT(u.first_name, ' ', u.last_name) LIKE ?)";
+                    $params = array_merge($params, [$search, $search, $search, $search]);
+                    $param_types .= 'ssss';
+                }
+                
+                if (!empty($_GET['doctor'])) {
+                    $where_conditions[] = "md.doctor_id = ?";
+                    $params[] = intval($_GET['doctor']);
+                    $param_types .= 'i';
+                }
+                
+                if (!empty($_GET['status'])) {
+                    $where_conditions[] = "md.status = ?";
+                    $params[] = $_GET['status'];
+                    $param_types .= 's';
+                }
+                
+                if (!empty($_GET['date'])) {
+                    $where_conditions[] = "DATE(md.distribution_date) = ?";
+                    $params[] = $_GET['date'];
+                    $param_types .= 's';
+                }
+                
+                $where_clause = !empty($where_conditions) ? 'WHERE ' . implode(' AND ', $where_conditions) : '';
+                
+                // Get total count
+                $count_sql = "SELECT COUNT(*) as total FROM medicine_distribution md 
+                             LEFT JOIN patients p ON md.patient_id = p.id 
+                             LEFT JOIN " . $MED_TABLE . " m ON md.medicine_id = m.id 
+                             LEFT JOIN users u ON md.doctor_id = u.id 
+                             $where_clause";
+                
+                $total_distributions = 0;
+                if ($stmt = $conn->prepare($count_sql)) {
+                    if (!empty($params)) {
+                        $stmt->bind_param($param_types, ...$params);
+                    }
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    $total_distributions = $result->fetch_assoc()['total'];
+                    $stmt->close();
+                }
+                
+                // Get distributions with joins
+                $sql = "SELECT md.*, 
+                               CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+                               m.name as medicine_name,
+                               CONCAT(u.first_name, ' ', u.last_name) as doctor_name
+                        FROM medicine_distribution md
+                        LEFT JOIN patients p ON md.patient_id = p.id
+                        LEFT JOIN " . $MED_TABLE . " m ON md.medicine_id = m.id
+                        LEFT JOIN users u ON md.doctor_id = u.id
+                        $where_clause
+                        ORDER BY md.distribution_date DESC
+                        LIMIT ? OFFSET ?";
+                
+                $distributions = [];
+                if ($stmt = $conn->prepare($sql)) {
+                    $all_params = array_merge($params, [$limit, $offset]);
+                    $all_param_types = $param_types . 'ii';
+                    $stmt->bind_param($all_param_types, ...$all_params);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    
+                    while ($row = $result->fetch_assoc()) {
+                        $distributions[] = $row;
+                    }
+                    $result->free();
+                    $stmt->close();
+                    
+                    echo json_encode([
+                        'success' => true, 
+                        'data' => $distributions, 
+                        'total' => $total_distributions,
+                        'page' => $page,
+                        'limit' => $limit
+                    ]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Error fetching distributions: ' . $conn->error]);
+                }
+                break;
+                
+            case 'POST':
+                require_login();
+                if (!can_manage_inventory()) { 
+                    http_response_code(403); 
+                    echo json_encode(['success'=>false,'message'=>'Forbidden']); 
+                    break; 
+                }
+                
+                $input = json_decode(file_get_contents('php://input'), true);
+                $patient_id = intval($input['patient_id'] ?? 0);
+                $doctor_id = intval($input['doctor_id'] ?? 0);
+                $medicine_id = intval($input['medicine_id'] ?? 0);
+                $quantity = intval($input['quantity'] ?? 0);
+                $prescription_date = trim($input['prescription_date'] ?? '');
+                $distribution_date = trim($input['distribution_date'] ?? '');
+                $notes = trim($input['notes'] ?? '');
+                
+                if ($patient_id <= 0 || $doctor_id <= 0 || $medicine_id <= 0 || $quantity <= 0) {
+                    echo json_encode(['success' => false, 'message' => 'Patient, doctor, medicine, and quantity are required']);
+                    break;
+                }
+                
+                // Check if medicine has sufficient stock
+                $check_stock_sql = "SELECT quantity FROM " . $MED_TABLE . " WHERE id = ?";
+                if ($stmt = $conn->prepare($check_stock_sql)) {
+                    $stmt->bind_param("i", $medicine_id);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    $medicine = $result->fetch_assoc();
+                    $stmt->close();
+                    
+                    if (!$medicine) {
+                        echo json_encode(['success' => false, 'message' => 'Medicine not found']);
+                        break;
+                    }
+                    
+                    if ($medicine['quantity'] < $quantity) {
+                        echo json_encode(['success' => false, 'message' => "Insufficient stock. Available: {$medicine['quantity']}"]);
+                        break;
+                    }
+                }
+                
+                // Insert distribution record
+                $insert_sql = "INSERT INTO medicine_distribution (patient_id, doctor_id, medicine_id, quantity, prescription_date, distribution_date, notes, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', NOW())";
+                if ($stmt = $conn->prepare($insert_sql)) {
+                    $stmt->bind_param("iiissss", $patient_id, $doctor_id, $medicine_id, $quantity, $prescription_date, $distribution_date, $notes);
+                    
+                    if ($stmt->execute()) {
+                        $distribution_id = $stmt->insert_id;
+                        
+                        // Update medicine stock
+                        $update_stock_sql = "UPDATE " . $MED_TABLE . " SET quantity = quantity - ? WHERE id = ?";
+                        if ($update_stmt = $conn->prepare($update_stock_sql)) {
+                            $update_stmt->bind_param("ii", $quantity, $medicine_id);
+                            $update_stmt->execute();
+                            $update_stmt->close();
+                        }
+                        
+                        echo json_encode(['success' => true, 'message' => 'Distribution recorded successfully!']);
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Error recording distribution: ' . $stmt->error]);
+                    }
+                    $stmt->close();
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Database error: Could not prepare statement. ' . $conn->error]);
+                }
+                break;
+                
+            case 'PUT':
+                require_login();
+                if (!can_manage_inventory()) { 
+                    http_response_code(403); 
+                    echo json_encode(['success'=>false,'message'=>'Forbidden']); 
+                    break; 
+                }
+                
+                $input = json_decode(file_get_contents('php://input'), true);
+                $distribution_id = intval($input['id'] ?? 0);
+                $status = trim($input['status'] ?? '');
+                
+                if ($distribution_id <= 0 || empty($status)) {
+                    echo json_encode(['success' => false, 'message' => 'Distribution ID and status are required']);
+                    break;
+                }
+                
+                $update_sql = "UPDATE medicine_distribution SET status = ?, updated_at = NOW() WHERE id = ?";
+                if ($stmt = $conn->prepare($update_sql)) {
+                    $stmt->bind_param("si", $status, $distribution_id);
+                    
+                    if ($stmt->execute()) {
+                        if ($stmt->affected_rows > 0) {
+                            echo json_encode(['success' => true, 'message' => 'Distribution status updated successfully!']);
+                        } else {
+                            echo json_encode(['success' => false, 'message' => 'Distribution not found or no changes made']);
+                        }
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Error updating distribution: ' . $stmt->error]);
+                    }
+                    $stmt->close();
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Database error: Could not prepare statement. ' . $conn->error]);
+                }
+                break;
+                
+            case 'DELETE':
+                require_login();
+                if (!can_manage_inventory()) { 
+                    http_response_code(403); 
+                    echo json_encode(['success'=>false,'message'=>'Forbidden']); 
+                    break; 
+                }
+                
+                $input = json_decode(file_get_contents('php://input'), true);
+                $distribution_id = intval($input['id'] ?? 0);
+                
+                if ($distribution_id <= 0) {
+                    echo json_encode(['success' => false, 'message' => 'Invalid distribution ID']);
+                    break;
+                }
+                
+                // Get distribution details before deletion
+                $get_sql = "SELECT medicine_id, quantity FROM medicine_distribution WHERE id = ?";
+                if ($stmt = $conn->prepare($get_sql)) {
+                    $stmt->bind_param("i", $distribution_id);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    $distribution = $result->fetch_assoc();
+                    $stmt->close();
+                    
+                    if (!$distribution) {
+                        echo json_encode(['success' => false, 'message' => 'Distribution not found']);
+                        break;
+                    }
+                }
+                
+                // Delete distribution
+                $delete_sql = "DELETE FROM medicine_distribution WHERE id = ?";
+                if ($stmt = $conn->prepare($delete_sql)) {
+                    $stmt->bind_param("i", $distribution_id);
+                    
+                    if ($stmt->execute()) {
+                        if ($stmt->affected_rows > 0) {
+                            // Restore medicine stock
+                            $restore_sql = "UPDATE " . $MED_TABLE . " SET quantity = quantity + ? WHERE id = ?";
+                            if ($restore_stmt = $conn->prepare($restore_sql)) {
+                                $restore_stmt->bind_param("ii", $distribution['quantity'], $distribution['medicine_id']);
+                                $restore_stmt->execute();
+                                $restore_stmt->close();
+                            }
+                            
+                            echo json_encode(['success' => true, 'message' => 'Distribution deleted successfully!']);
+                        } else {
+                            echo json_encode(['success' => false, 'message' => 'Distribution not found or already deleted']);
+                        }
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Error deleting distribution: ' . $stmt->error]);
+                    }
+                    $stmt->close();
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Database error: Could not prepare statement. ' . $conn->error]);
+                }
+                break;
+                
             default:
-        http_response_code(404); // Not Found
-        echo json_encode(['success' => false, 'message' => 'Resource not found']);
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Method Not Allowed for distributions']);
                 break;
         }
+        break;
+        
+    default:
+        http_response_code(404); // Not Found
+        echo json_encode(['success' => false, 'message' => 'Resource not found']);
+        break;
+}
 
 $conn->close();
 ?>

@@ -147,6 +147,10 @@
                         <i class="fas fa-boxes w-5"></i>
                         <span class="text-sm font-medium">Inventory</span>
                     </a>
+                    <a href="./distribute.php" class="flex items-center space-x-3 p-3 text-blue-100 hover:bg-blue-700 rounded-lg transition-colors duration-200">
+                        <i class="fas fa-hand-holding-medical w-5"></i>
+                        <span class="text-sm font-medium">Distribution</span>
+                    </a>
                     <a href="./reports.php" class="flex items-center space-x-3 p-3 text-blue-100 hover:bg-blue-700 rounded-lg transition-colors duration-200">
                         <i class="fas fa-chart-bar w-5"></i>
                         <span class="text-sm font-medium">Reports</span>

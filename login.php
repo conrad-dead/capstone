@@ -37,24 +37,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     if ($role_name_lc === 'admin') {
                         header('Location: admin/admin_dashboard.php');
                         exit();
-<<<<<<< HEAD
                     }
                     // Clinician and medical staff go to clinician dashboard
                     if (in_array($role_name_lc, ['clinician','doctor','nurse','midwife','other'], true)) {
-=======
-                    } elseif ($role_name_lc === 'clinician') {
->>>>>>> 752144dc532d595eaa7654e431baaff97e8bb2aa
                         header('Location: clinician/clinician_dashboard.php');
-                        exit();
-                    } elseif ($role_name_lc === 'pharmacist' || $role_name_lc === 'pharmacists') {
-                        header('Location: pharmacists/pharmacists_dashboard.php');
-                        exit();
-                    } elseif ($role_name_lc === 'bhw') {
-                        header('Location: bhw/bhw_dashboard.php');
-                        exit();
-                    } else {
-                        // fallback: send non-admin unknown roles to login
-                        header('Location: login.php');
                         exit();
                     }
                     // Pharmacy roles go to pharmacist dashboard
